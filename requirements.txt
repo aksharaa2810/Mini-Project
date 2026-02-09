@@ -1,0 +1,14 @@
+Flask==2.3.0
+Werkzeug==2.3.0
+opencv-python==4.8.0.74
+mtcnn==0.1.1
+keras==2.12.0
+tensorflow==2.12.0
+keras-vggface==0.6
+scikit-learn==1.3.0
+Pillow==10.0.0
+numpy==1.24.3
+pandas==2.0.3
+qrcode==7.4.2
+python-dateutil==2.8.2
+Flask-Mail==0.9.1

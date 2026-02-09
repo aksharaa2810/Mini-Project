@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Registration - Smart Attendance</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+            font-size: 14px;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .required {
+            color: #ef4444;
+        }
+        
+        .camera-section {
+            background: #000;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 30px 0;
+        }
+        
+        video {
+            width: 100%;
+            max-width: 640px;
+            display: block;
+            margin: 0 auto;
+            border-radius: 10px;
+        }
+        
+        canvas {
+            display: none;
+        }
+        
+        .controls {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .captured-faces {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        
+        .captured-face {
+            width: 150px;
+            height: 150px;
+            border: 3px solid #10b981;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .captured-face img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .captured-face .number {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            background: #10b981;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-weight: 600;
+            display: none;
+        }
+        
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 2px solid #10b981;
+        }
+        
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 2px solid #ef4444;
+        }
+        
+        .status-info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 2px solid #3b82f6;
+        }
+        
+        .progress {
+            text-align: center;
+            color: #374151;
+            margin: 15px 0;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+        }
+        
+        .instructions {
+            background: #f3f4f6;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .instructions h3 {
+            color: #374151;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ul {
+            margin-left: 20px;
+            color: #6b7280;
+        }
+        
+        .instructions li {
+            margin: 5px 0;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>👤 Face Registration</h1>
+        <p class="subtitle">Register your face for automatic attendance marking</p>
+        
+        <div class="instructions">
+            <h3>📋 Instructions:</h3>
+            <ul>
+                <li>Fill in your details below</li>
+                <li>Click "Start Camera" to begin</li>
+                <li>Ensure good lighting and your face is clearly visible</li>
+                <li>Capture 3 different photos (slight variations in angle)</li>
+                <li>Press SPACE key or click "Capture" button</li>
+            </ul>
+        </div>
+        
+        <div class="form-group">
+            <label>Student ID <span class="required">*</span></label>
+            <input type="text" id="student_id" placeholder="e.g., STU002" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Full Name <span class="required">*</span></label>
+            <input type="text" id="student_name" placeholder="e.g., John Doe" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Class</label>
+            <input type="text" id="student_class" placeholder="e.g., CS-A">
+        </div>
+        
+        <div class="form-group">
+            <label>Department <span class="required">*</span></label>
+            <select id="student_department">
+                <option value="Computer Science">Computer Science</option>
+                <option value="Electrical Engineering">Electrical Engineering</option>
+                <option value="Mechanical Engineering">Mechanical Engineering</option>
+                <option value="Civil Engineering">Civil Engineering</option>
+                <option value="Electronics Engineering">Electronics Engineering</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Semester</label>
+            <select id="student_semester">
+                <option value="1">Semester 1</option>
+                <option value="2">Semester 2</option>
+                <option value="3" selected>Semester 3</option>
+                <option value="4">Semester 4</option>
+                <option value="5">Semester 5</option>
+                <option value="6">Semester 6</option>
+                <option value="7">Semester 7</option>
+                <option value="8">Semester 8</option>
+            </select>
+        </div>
+        
+        <div class="progress">
+            <span id="progress-text">0/3 images captured</span>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+            </div>
+        </div>
+        
+        <div id="status" class="status"></div>
+        
+        <div class="camera-section">
+            <video id="video" autoplay></video>
+            <canvas id="canvas"></canvas>
+            
+            <div class="controls">
+                <button class="btn btn-primary" id="startBtn">📷 Start Camera</button>
+                <button class="btn btn-success" id="captureBtn" style="display: none;">📸 Capture (Space)</button>
+                <button class="btn btn-secondary" id="stopBtn" style="display: none;">⏹️ Stop</button>
+            </div>
+        </div>
+        
+        <div class="captured-faces" id="capturedFaces"></div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="btn btn-primary pulse" id="completeBtn" style="display: none; padding: 15px 40px; font-size: 18px;">
+                ✅ Complete Registration
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('canvas');
+        let stream = null;
+        let capturedCount = 0;
+        let studentData = {};
+        
+        // Start Camera
+        document.getElementById('startBtn').addEventListener('click', async () => {
+            const id = document.getElementById('student_id').value.trim();
+            const name = document.getElementById('student_name').value.trim();
+            const department = document.getElementById('student_department').value;
+            
+            if (!id || !name) {
+                showStatus('Please enter Student ID and Name', 'error');
+                return;
+            }
+            
+            studentData = {
+                student_id: id,
+                student_name: name,
+                student_class: document.getElementById('student_class').value.trim(),
+                student_department: department,
+                student_semester: document.getElementById('student_semester').value
+            };
+            
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    } 
+                });
+                
+                video.srcObject = stream;
+                
+                document.getElementById('startBtn').style.display = 'none';
+                document.getElementById('captureBtn').style.display = 'inline-block';
+                document.getElementById('stopBtn').style.display = 'inline-block';
+                
+                showStatus('Camera started! Position your face and press Capture', 'info');
+            } catch (error) {
+                showStatus('Camera error: ' + error.message, 'error');
+            }
+        });
+        
+        // Capture Face
+        async function captureFace() {
+            const btn = document.getElementById('captureBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Processing...';
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            const imageData = canvas.toDataURL('image/jpeg', 0.9);
+            
+            try {
+                const response = await fetch('/face-registration/capture-face', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ...studentData,
+                        image: imageData
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    capturedCount = result.images_captured;
+                    displayCapturedImage(imageData, capturedCount);
+                    updateProgress(capturedCount);
+                    showStatus(result.message, 'success');
+                    
+                    if (!result.need_more) {
+                        document.getElementById('captureBtn').style.display = 'none';
+                        document.getElementById('stopBtn').click();
+                        document.getElementById('completeBtn').style.display = 'inline-block';
+                    }
+                } else {
+                    showStatus(result.message, 'error');
+                }
+            } catch (error) {
+                showStatus('Error: ' + error.message, 'error');
+            }
+            
+            btn.disabled = false;
+            btn.textContent = '📸 Capture (Space)';
+        }
+        
+        document.getElementById('captureBtn').addEventListener('click', captureFace);
+        
+        // Keyboard shortcut
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && document.getElementById('captureBtn').style.display !== 'none') {
+                e.preventDefault();
+                captureFace();
+            }
+        });
+        
+        // Stop Camera
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+            
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('captureBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'none';
+        });
+        
+        // Complete Registration
+        document.getElementById('completeBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('completeBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Completing...';
+            
+            try {
+                const response = await fetch('/face-registration/complete-registration', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ student_id: studentData.student_id })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus('✅ Registration Complete! Redirecting...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/face-attendance/mark';
+                    }, 2000);
+                } else {
+                    showStatus('Error: ' + result.message, 'error');
+                    btn.disabled = false;
+                    btn.textContent = '✅ Complete Registration';
+                }
+            } catch (error) {
+                showStatus('Error: ' + error.message, 'error');
+                btn.disabled = false;
+                btn.textContent = '✅ Complete Registration';
+            }
+        });
+        
+        // Display captured image
+        function displayCapturedImage(imageData, number) {
+            const div = document.createElement('div');
+            div.className = 'captured-face';
+            
+            const img = document.createElement('img');
+            img.src = imageData;
+            
+            const numberDiv = document.createElement('div');
+            numberDiv.className = 'number';
+            numberDiv.textContent = number;
+            
+            div.appendChild(img);
+            div.appendChild(numberDiv);
+            
+            document.getElementById('capturedFaces').appendChild(div);
+        }
+        
+        // Update progress
+        function updateProgress(count) {
+            const percentage = (count / 3) * 100;
+            document.getElementById('progress-text').textContent = `${count}/3 images captured`;
+            document.getElementById('progress-fill').style.width = percentage + '%';
+        }
+        
+        // Show status message
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status status-' + type;
+            status.style.display = 'block';
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 5000);
+            }
+        }
+    </script>
+</body>
+</html>

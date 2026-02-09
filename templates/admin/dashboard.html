@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container admin-dashboard">
+    
+    <!-- Admin Header -->
+    <div class="admin-header">
+        <h1>Admin Dashboard</h1>
+        <p>Welcome, {{ name }}! | Admin ID: {{ session.user_id }}</p>
+        <p>📅 {{ current_date }} | 🕐 {{ current_time }}</p>
+    </div>
+    
+    <!-- Main Statistics -->
+    <div class="stats-grid">
+        <div class="stat-box students">
+            <div class="icon">👥</div>
+            <div class="info">
+                <h3>{{ total_students }}</h3>
+                <p>Total Students</p>
+            </div>
+        </div>
+        
+        <div class="stat-box staff">
+            <div class="icon">👨‍🏫</div>
+            <div class="info">
+                <h3>{{ total_staff }}</h3>
+                <p>Total Staff</p>
+            </div>
+        </div>
+        
+        <div class="stat-box attendance">
+            <div class="icon">✅</div>
+            <div class="info">
+                <h3>{{ today_attendance }}%</h3>
+                <p>Today's Attendance</p>
+            </div>
+        </div>
+        
+        <div class="stat-box od-requests">
+            <div class="icon">📝</div>
+            <div class="info">
+                <h3>{{ pending_od_requests }}</h3>
+                <p>Pending OD Requests</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Additional Stats -->
+    <div class="grid grid-4" style="margin-top: 30px;">
+        <div class="card" style="text-align: center; padding: 20px;">
+            <div style="font-size: 36px; margin-bottom: 10px;">🎓</div>
+            <h3 style="font-size: 28px; color: #667eea; margin-bottom: 5px;">{{ total_classes }}</h3>
+            <p style="color: #6b7280;">Total Classes</p>
+        </div>
+        
+        <div class="card" style="text-align: center; padding: 20px;">
+            <div style="font-size: 36px; margin-bottom: 10px;">📚</div>
+            <h3 style="font-size: 28px; color: #667eea; margin-bottom: 5px;">{{ total_subjects }}</h3>
+            <p style="color: #6b7280;">Total Subjects</p>
+        </div>
+        
+        <div class="card" style="text-align: center; padding: 20px;">
+            <div style="font-size: 36px; margin-bottom: 10px;">🚌</div>
+            <h3 style="font-size: 28px; color: #667eea; margin-bottom: 5px;">{{ bus_users }}</h3>
+            <p style="color: #6b7280;">Bus Users Today</p>
+        </div>
+        
+        <div class="card" style="text-align: center; padding: 20px;">
+            <div style="font-size: 36px; margin-bottom: 10px;">🏠</div>
+            <h3 style="font-size: 28px; color: #667eea; margin-bottom: 5px;">{{ hostel_passes }}</h3>
+            <p style="color: #6b7280;">Active Hostel Passes</p>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <h2 style="color: white; margin: 40px 0 20px;">Quick Actions</h2>
+    <div class="grid grid-4">
+        <a href="{{ url_for('admin.manage_users') }}" class="action-card">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 28px; color: white;">
+                👥
+            </div>
+            <h3 style="font-size: 18px; margin-bottom: 10px; color: #333;">Manage Users</h3>
+            <p style="font-size: 14px; color: #6b7280;">Add/Edit/Delete users</p>
+        </a>
+        
+        <a href="{{ url_for('admin.system_logs') }}" class="action-card">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 28px; color: white;">
+                📋
+            </div>
+            <h3 style="font-size: 18px; margin-bottom: 10px; color: #333;">System Logs</h3>
+            <p style="font-size: 14px; color: #6b7280;">View system activity</p>
+        </a>
+        
+        <a href="#" onclick="openSettings(); return false;" class="action-card">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 28px; color: white;">
+                ⚙️
+            </div>
+            <h3 style="font-size: 18px; margin-bottom: 10px; color: #333;">Settings</h3>
+            <p style="font-size: 14px; color: #6b7280;">System configuration</p>
+        </a>
+        
+        <a href="#" onclick="backupDatabase(); return false;" class="action-card">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 28px; color: white;">
+                💾
+            </div>
+            <h3 style="font-size: 18px; margin-bottom: 10px; color: #333;">Backup</h3>
+            <p style="font-size: 14px; color: #6b7280;">Database backup</p>
+        </a>
+    </div>
+    
+    <!-- Attendance Overview -->
+    <div class="grid grid-2" style="margin-top: 40px;">
+        <div class="card">
+            <h2 class="card-title">Weekly Attendance Trend</h2>
+            <canvas id="weeklyChart" style="max-height: 300px;"></canvas>
+        </div>
+        
+        <div class="card">
+            <h2 class="card-title">Department-wise Attendance</h2>
+            <canvas id="departmentChart" style="max-height: 300px;"></canvas>
+        </div>
+    </div>
+    
+    <!-- Recent Users -->
+    <div class="card" style="margin-top: 40px;">
+        <h2 class="card-title">Recently Added Users</h2>
+        
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>User ID</th>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Email</th>
+                    <th>Added On</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if recent_users %}
+                    {% for user in recent_users %}
+                    <tr>
+                        <td>{{ user.user_id }}</td>
+                        <td>{{ user.name }}</td>
+                        <td>
+                            <span class="badge badge-info">{{ user.role }}</span>
+                        </td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.created_at }}</td>
+                        <td>
+                            <span class="badge badge-success">Active</span>
+                        </td>
+                        <td>
+                            <button class="btn btn-secondary" 
+                                    style="padding: 5px 15px; font-size: 14px;"
+                                    onclick="viewUser('{{ user.user_id }}')">
+                                View
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: #6b7280;">
+                            No recent users
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- System Status -->
+    <div class="card" style="margin-top: 40px;">
+        <h2 class="card-title">System Status</h2>
+        
+        <div class="grid grid-3">
+            <div style="padding: 20px; background: #d1fae5; border-radius: 10px;">
+                <h4 style="color: #065f46; margin-bottom: 10px;">✅ Database</h4>
+                <p style="color: #065f46; font-weight: 600;">Connected</p>
+                <p style="color: #6b7280; font-size: 14px;">Last backup: {{ last_backup }}</p>
+            </div>
+            
+            <div style="padding: 20px; background: #dbeafe; border-radius: 10px;">
+                <h4 style="color: #1e40af; margin-bottom: 10px;">🔐 Security</h4>
+                <p style="color: #1e40af; font-weight: 600;">All Systems Secure</p>
+                <p style="color: #6b7280; font-size: 14px;">No threats detected</p>
+            </div>
+            
+            <div style="padding: 20px; background: #fef3c7; border-radius: 10px;">
+                <h4 style="color: #92400e; margin-bottom: 10px;">📊 Performance</h4>
+                <p style="color: #92400e; font-weight: 600;">Good</p>
+                <p style="color: #6b7280; font-size: 14px;">Response time: {{ avg_response_time }}ms</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Alerts & Notifications -->
+    <div class="card" style="margin-top: 40px;">
+        <h2 class="card-title">System Alerts</h2>
+        
+        {% if alerts %}
+            {% for alert in alerts %}
+            <div class="alert alert-{{ alert.type }}">
+                <strong>{{ alert.title }}</strong><br>
+                {{ alert.message }}<br>
+                <small>{{ alert.time }}</small>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="color: #6b7280;">No system alerts</p>
+        {% endif %}
+    </div>
+    
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+<script>
+    // Weekly Attendance Chart
+    const weeklyCtx = document.getElementById('weeklyChart').getContext('2d');
+    const weeklyChart = new Chart(weeklyCtx, {
+        type: 'line',
+        data: {
+            labels: {{ weekly_labels|tojson }},
+            datasets: [{
+                label: 'Attendance %',
+                data: {{ weekly_data|tojson }},
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+    
+    // Department Chart
+    const deptCtx = document.getElementById('departmentChart').getContext('2d');
+    const deptChart = new Chart(deptCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ department_labels|tojson }},
+            datasets: [{
+                label: 'Attendance %',
+                data: {{ department_data|tojson }},
+                backgroundColor: [
+                    '#667eea',
+                    '#764ba2',
+                    '#f093fb',
+                    '#4facfe',
+                    '#43e97b'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+    
+    function viewUser(userId) {
+        window.location.href = `{{ url_for('admin.manage_users') }}?user=${userId}`;
+    }
+    
+    function openSettings() {
+        window.appUtils.showNotification('Settings panel - Coming soon!', 'info');
+    }
+    
+    function backupDatabase() {
+        if (confirm('Create a backup of the database?')) {
+            window.appUtils.showNotification('Creating backup...', 'info');
+            
+            fetch('/admin/backup-database', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.appUtils.showNotification('Backup created successfully', 'success');
+                } else {
+                    window.appUtils.showNotification('Backup failed', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                window.appUtils.showNotification('Network error', 'error');
+            });
+        }
+    }
+    
+    // Auto-refresh dashboard every 5 minutes
+    setTimeout(function() {
+        location.reload();
+    }, 300000);
+</script>
+
+<style>
+    .action-card {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        text-align: center;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+    
+    .action-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    }
+</style>
+{% endblock %}

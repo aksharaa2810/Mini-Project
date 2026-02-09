@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Pass Verification</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f3f4f6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .status-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        .valid {
+            color: #10b981;
+        }
+
+        .invalid {
+            color: #ef4444;
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            color: #1f2937;
+            font-size: 24px;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            margin-bottom: 25px;
+        }
+
+        .detail-row {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 12px 0;
+            display: flex;
+            justify-content: space-between;
+            text-align: left;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .label {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .value {
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .timestamp {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #4b5563;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        {% if student %}
+        <div class="status-icon valid">🚌</div>
+        <h1>Bus Pass Valid</h1>
+        <p class="subtitle">Active Student Bus Pass</p>
+
+        <div class="detail-row">
+            <span class="label">Student ID</span>
+            <span class="value">{{ student.user_id }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="label">Name</span>
+            <span class="value">{{ student.name }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="label">Route</span>
+            <span class="value">College Bus Service</span>
+        </div>
+
+        <div class="timestamp">
+            <strong>Valid Date:</strong><br>{{ date }}
+        </div>
+
+        {% else %}
+        <div class="status-icon invalid">❌</div>
+        <h1>Invalid Pass</h1>
+        <p class="subtitle">Student not found or pass invalid</p>
+        {% endif %}
+
+        <div style="margin-top: 25px; font-size: 12px; color: #9ca3af;">
+            Verified by FaceWave System<br>
+            {{ now }}
+        </div>
+    </div>
+</body>
+
+</html>

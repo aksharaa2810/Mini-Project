@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Registration - Smart Attendance</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .register-container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #6b7280;
+            font-size: 16px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            display: block;
+            color: #374151;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .required {
+            color: #ef4444;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-register {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 10px;
+        }
+
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .alert {
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #6b7280;
+        }
+
+        .login-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #6b7280;
+            font-size: 18px;
+        }
+
+        .info-box {
+            background: #dbeafe;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+
+        @media (max-width: 640px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .register-container {
+                padding: 30px 20px;
+            }
+        }
+
+        /* Camera Styles */
+        .camera-section {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            border: 2px dashed #cbd5e1;
+            text-align: center;
+        }
+
+        video {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 10px;
+            background: #000;
+            margin-bottom: 15px;
+            transform: scaleX(-1);
+            /* Mirror effect */
+        }
+
+        .slots {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .slot {
+            width: 60px;
+            height: 60px;
+            border: 2px dashed #cbd5e1;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #cbd5e1;
+            background: white;
+            transition: all 0.3s;
+        }
+
+        .slot.done {
+            border-color: #10b981;
+            background: #d1fae5;
+            color: #10b981;
+            border-style: solid;
+        }
+
+        .btn-capture {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        .btn-capture:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="register-container">
+        <div class="header">
+            <h1>🎓 Student Registration</h1>
+            <p>Create your student account</p>
+        </div>
+
+        <div class="info-box">
+            <strong>📧 Email Notifications:</strong> You and your parent will receive confirmation emails after
+            registration.
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form method="POST" id="registerForm">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Student ID <span class="required">*</span></label>
+                    <input type="text" name="user_id" placeholder="e.g., STU001" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Full Name <span class="required">*</span></label>
+                    <input type="text" name="name" placeholder="e.g., John Doe" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Student Email <span class="required">*</span></label>
+                    <input type="email" name="email" placeholder="your.email@student.edu" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Parent Email <span class="required">*</span></label>
+                    <input type="email" name="parent_email" placeholder="parent@example.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="tel" name="phone" placeholder="9876543210" pattern="[0-9]{10}">
+                </div>
+
+                <div class="form-group">
+                    <label>Department <span class="required">*</span></label>
+                    <select name="department" required>
+                        <option value="">Select Department</option>
+                        <option value="Computer Science">Computer Science</option>
+                        <option value="Electrical Engineering">Electrical Engineering</option>
+                        <option value="Mechanical Engineering">Mechanical Engineering</option>
+                        <option value="Civil Engineering">Civil Engineering</option>
+                        <option value="Electronics Engineering">Electronics Engineering</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Semester <span class="required">*</span></label>
+                    <select name="semester" required>
+                        <option value="">Select Semester</option>
+                        <option value="1">Semester 1</option>
+                        <option value="2">Semester 2</option>
+                        <option value="3" selected>Semester 3</option>
+                        <option value="4">Semester 4</option>
+                        <option value="5">Semester 5</option>
+                        <option value="6">Semester 6</option>
+                        <option value="7">Semester 7</option>
+                        <option value="8">Semester 8</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Class</label>
+                    <input type="text" name="class" placeholder="e.g., CS-A">
+                </div>
+
+                <div class="form-group">
+                    <label>Roll Number</label>
+                    <input type="text" name="roll_no" placeholder="e.g., 101">
+                </div>
+
+                <div class="form-group full-width">
+                    <label>Password <span class="required">*</span></label>
+                    <div style="position: relative;">
+                        <input type="password" name="password" placeholder="Minimum 6 characters" required minlength="6"
+                            id="password">
+                        <span class="password-toggle" onclick="togglePassword('password')">👁️</span>
+                    </div>
+                </div>
+
+                <div class="form-group full-width">
+                    <label>Confirm Password <span class="required">*</span></label>
+                    <div style="position: relative;">
+                        <input type="password" name="confirm_password" placeholder="Re-enter password" required
+                            minlength="6" id="confirm_password">
+                        <span class="password-toggle" onclick="togglePassword('confirm_password')">👁️</span>
+                    </div>
+                </div>
+
+                <div class="form-group full-width">
+                    <label>Profile Image (Optional)</label>
+                    <input type="file" id="profile_image" accept="image/*">
+                    <small style="color: #6b7280;">Upload a passport size photo of yourself.</small>
+                </div>
+            </div>
+
+            <!-- Camera Section -->
+            <div class="camera-section">
+                <h3>📸 Face Registration</h3>
+                <p style="font-size: 0.9em; color: #6b7280; margin-bottom: 15px;">Capture 3 photos of your face</p>
+
+                <div id="cameraControls">
+                    <button type="button" id="startCamera" class="btn-capture">Start Camera</button>
+                    <button type="button" id="captureInfo" class="btn-capture"
+                        style="display:none; background: #ea580c;" onclick="resetCamera()">Reset</button>
+                </div>
+
+                <div id="videoContainer" style="display:none; margin-top:15px;">
+                    <video id="video" autoplay playsinline></video>
+                    <canvas id="canvas" style="display:none;"></canvas>
+                    <br>
+                    <button type="button" id="captureBtn" class="btn-capture" style="background: #10b981;">📸 Capture
+                        Photo</button>
+                </div>
+
+                <div class="slots">
+                    <div class="slot" id="slot1">1</div>
+                    <div class="slot" id="slot2">2</div>
+                    <div class="slot" id="slot3">3</div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-register">✓ Register</button>
+        </form>
+
+        <div class="login-link">
+            Already have an account? <a href="{{ url_for('auth.login') }}">Login here</a>
+        </div>
+    </div>
+
+    <script>
+        let stream = null;
+        let images = [];
+        const REQUIRED_IMAGES = 3;
+
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const startBtn = document.getElementById('startCamera');
+        const videoContainer = document.getElementById('videoContainer');
+        const captureBtn = document.getElementById('captureBtn');
+        const registerForm = document.getElementById('registerForm');
+
+        // Start Camera
+        startBtn.addEventListener('click', async () => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                startBtn.style.display = 'none';
+                videoContainer.style.display = 'block';
+                document.getElementById('captureInfo').style.display = 'inline-block';
+            } catch (err) {
+                alert("Error accessing camera: " + err.message);
+            }
+        });
+
+        function resetCamera() {
+            images = [];
+            updateSlots();
+            captureBtn.disabled = false;
+            captureBtn.innerText = "📸 Capture Photo";
+        }
+
+        // Capture Photo
+        captureBtn.addEventListener('click', () => {
+            if (images.length >= REQUIRED_IMAGES) return;
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+
+            const imageData = canvas.toDataURL('image/jpeg', 0.8);
+            images.push(imageData);
+
+            updateSlots();
+
+            if (images.length === REQUIRED_IMAGES) {
+                captureBtn.disabled = true;
+                captureBtn.innerText = "✅ Photos Captured";
+            }
+        });
+
+        function updateSlots() {
+            for (let i = 1; i <= 3; i++) {
+                const slot = document.getElementById(`slot${i}`);
+                if (i <= images.length) {
+                    slot.classList.add('done');
+                    slot.innerText = "✓";
+                } else {
+                    slot.classList.remove('done');
+                    slot.innerText = i;
+                }
+            }
+        }
+
+        // Form Submit
+        registerForm.addEventListener('submit', async function (e) {
+            e.preventDefault(); // Stop default form submit
+
+            const password = document.querySelector('[name="password"]').value;
+            const confirmPassword = document.querySelector('[name="confirm_password"]').value;
+
+            if (password !== confirmPassword) {
+                alert('Passwords do not match!');
+                return;
+            }
+
+            if (images.length < REQUIRED_IMAGES) {
+                alert(`Please capture all ${REQUIRED_IMAGES} photos before registering.`);
+                return;
+            }
+
+            // Gather Form Data
+            const formData = new FormData(registerForm);
+            const data = Object.fromEntries(formData.entries());
+            data.images = images; // Add images array
+
+            const submitWithProfile = (profileBase64 = null) => {
+                if (profileBase64) data.profile_image = profileBase64;
+
+                const btn = document.querySelector('.btn-register');
+                const originalText = btn.innerText;
+                btn.disabled = true;
+                btn.innerText = "⏳ Registering...";
+
+                fetch('/auth/register-with-face', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                })
+                    .then(res => res.json())
+                    .then(result => {
+                        if (result.success) {
+                            window.location.href = result.redirect_url;
+                        } else {
+                            alert(result.message || "Registration failed");
+                            btn.disabled = false;
+                            btn.innerText = originalText;
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        alert("An error occurred during registration.");
+                        btn.disabled = false;
+                        btn.innerText = originalText;
+                    });
+            };
+
+            // Process Profile Image
+            const profileInput = document.getElementById('profile_image');
+            if (profileInput && profileInput.files.length > 0) {
+                const file = profileInput.files[0];
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    submitWithProfile(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                submitWithProfile();
+            }
+        });
+    </script>
+</body>
+
+</html>

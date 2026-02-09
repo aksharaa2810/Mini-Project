@@ -1,0 +1,496 @@
+{% extends "base.html" %}
+
+{% block title %}My Attendance{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/student.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container student-dashboard">
+    
+    <div class="card">
+        <h1 class="card-title">📚 My Attendance Records</h1>
+        
+        <!-- Filters -->
+        <div style="display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap;">
+            <div class="form-group" style="flex: 1; min-width: 200px;">
+                <label for="subjectFilter">🎓 Filter by Subject</label>
+                <select id="subjectFilter" class="form-control" onchange="filterAttendance()">
+                    <option value="all">All Subjects</option>
+                    <!-- Computer Science -->
+                    <option value="Data Structures">Data Structures</option>
+                    <option value="Operating Systems">Operating Systems</option>
+                    <option value="Database Management">Database Management</option>
+                    <option value="Computer Networks">Computer Networks</option>
+                    <option value="Software Engineering">Software Engineering</option>
+                    <option value="Web Technologies">Web Technologies</option>
+                    <option value="Computer Architecture">Computer Architecture</option>
+                    <option value="Artificial Intelligence">Artificial Intelligence</option>
+                    <option value="Machine Learning">Machine Learning</option>
+                    <option value="Cloud Computing">Cloud Computing</option>
+                    <option value="Cryptography">Cryptography</option>
+                    <option value="Computer Graphics">Computer Graphics</option>
+                    <option value="Compiler Design">Compiler Design</option>
+                    <option value="Theory of Computation">Theory of Computation</option>
+                    <!-- Labs -->
+                    <option value="Algorithm Design Lab">Algorithm Design Lab</option>
+                    <option value="DBMS Lab">DBMS Lab</option>
+                    <option value="Web Technologies Lab">Web Technologies Lab</option>
+                    <!-- Electrical Engineering -->
+                    <option value="Power Systems">Power Systems</option>
+                    <option value="Control Systems">Control Systems</option>
+                    <option value="Electrical Machines">Electrical Machines</option>
+                    <option value="Power Electronics">Power Electronics</option>
+                    <option value="Digital Electronics">Digital Electronics</option>
+                    <option value="Electromagnetic Theory">Electromagnetic Theory</option>
+                    <option value="Renewable Energy">Renewable Energy</option>
+                    <option value="High Voltage Engineering">High Voltage Engineering</option>
+                    <!-- Mechanical Engineering -->
+                    <option value="Thermodynamics">Thermodynamics</option>
+                    <option value="Fluid Mechanics">Fluid Mechanics</option>
+                    <option value="Machine Design">Machine Design</option>
+                    <option value="Manufacturing Processes">Manufacturing Processes</option>
+                    <option value="Heat Transfer">Heat Transfer</option>
+                    <option value="Automotive Engineering">Automotive Engineering</option>
+                    <option value="Robotics">Robotics</option>
+                    <option value="Mechatronics">Mechatronics</option>
+                    <!-- Civil Engineering -->
+                    <option value="Structural Analysis">Structural Analysis</option>
+                    <option value="Concrete Technology">Concrete Technology</option>
+                    <option value="Surveying">Surveying</option>
+                    <option value="Geotechnical Engineering">Geotechnical Engineering</option>
+                    <option value="Transportation Engineering">Transportation Engineering</option>
+                    <option value="Environmental Engineering">Environmental Engineering</option>
+                    <option value="Construction Management">Construction Management</option>
+                    <!-- Electronics Engineering -->
+                    <option value="Digital Signal Processing">Digital Signal Processing</option>
+                    <option value="Microcontrollers">Microcontrollers</option>
+                    <option value="Communication Systems">Communication Systems</option>
+                    <option value="VLSI Design">VLSI Design</option>
+                    <option value="Embedded Systems">Embedded Systems</option>
+                    <option value="Wireless Communication">Wireless Communication</option>
+                    <option value="Optical Communication">Optical Communication</option>
+                    <!-- Common -->
+                    <option value="Project Work">Project Work</option>
+                    <option value="Seminar">Seminar</option>
+                    <option value="Workshop">Workshop</option>
+                    <option value="Lab Session">Lab Session</option>
+                </select>
+            </div>
+            
+            <div class="form-group" style="flex: 1; min-width: 200px;">
+                <label for="monthFilter">📅 Filter by Month</label>
+                <select id="monthFilter" class="form-control" onchange="filterAttendance()">
+                    <option value="all">All Months</option>
+                    <option value="01">January</option>
+                    <option value="02">February</option>
+                    <option value="03">March</option>
+                    <option value="04">April</option>
+                    <option value="05">May</option>
+                    <option value="06">June</option>
+                    <option value="07">July</option>
+                    <option value="08">August</option>
+                    <option value="09">September</option>
+                    <option value="10">October</option>
+                    <option value="11">November</option>
+                    <option value="12">December</option>
+                </select>
+            </div>
+            
+            <div class="form-group" style="flex: 1; min-width: 200px;">
+                <label for="statusFilter">✅ Filter by Status</label>
+                <select id="statusFilter" class="form-control" onchange="filterAttendance()">
+                    <option value="all">All Status</option>
+                    <option value="present">Present</option>
+                    <option value="absent">Absent</option>
+                    <option value="od">On-Duty</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Summary Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">Total Classes</div>
+                <div style="font-size: 32px; font-weight: bold;" id="totalClasses">0</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">Present</div>
+                <div style="font-size: 32px; font-weight: bold;" id="presentCount">0</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">Absent</div>
+                <div style="font-size: 32px; font-weight: bold;" id="absentCount">0</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 20px; border-radius: 10px; text-align: center;">
+                <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">Percentage</div>
+                <div style="font-size: 32px; font-weight: bold;" id="percentageDisplay">0%</div>
+            </div>
+        </div>
+        
+        <!-- Attendance Table -->
+        <div style="overflow-x: auto;">
+            <table class="table" id="attendanceTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Day</th>
+                        <th>Period</th>
+                        <th>Subject</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th>Department</th>
+                        <th>Marked By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if records %}
+                        {% for record in records %}
+                        <tr data-subject="{{ record.subject }}" 
+                            data-month="{{ record.date[5:7] if record.date else '01' }}"
+                            data-status="{{ record.status }}">
+                            <td>{{ record.date }}</td>
+                            <td>
+                                {% set day_map = {
+                                    '2025-01-05': 'Monday',
+                                    '2025-01-06': 'Tuesday',
+                                    '2025-01-07': 'Wednesday',
+                                    '2025-01-08': 'Thursday',
+                                    '2025-01-19': 'Friday',
+                                    '2025-01-10': 'Saturday'
+                                } %}
+                                {{ day_map.get(record.date, 'Monday') }}
+                            </td>
+                            <td>
+                                <span style="background: #667eea; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">
+                                    P{{ record.period }}
+                                </span>
+                            </td>
+                            <td>
+                                <strong>{{ record.subject }}</strong>
+                            </td>
+                            <td>{{ record.time }}</td>
+                            <td>
+                                {% if record.status == 'present' %}
+                                    <span class="badge badge-success">✓ Present</span>
+                                {% elif record.status == 'absent' %}
+                                    <span class="badge badge-danger">✗ Absent</span>
+                                {% elif record.status == 'od' %}
+                                    <span class="badge badge-info">⊙ On-Duty</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span style="color: #6b7280; font-size: 13px;">
+                                    {{ record.department if record.department else 'General' }}
+                                </span>
+                            </td>
+                            <td>
+                                <span style="color: #6b7280; font-size: 13px;">
+                                    {{ record.marked_by }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr id="noRecordsRow">
+                            <td colspan="8" style="text-align: center; padding: 40px; color: #6b7280;">
+                                <div style="font-size: 48px; margin-bottom: 10px;">📚</div>
+                                <div style="font-size: 18px; margin-bottom: 5px;">No attendance records found</div>
+                                <div style="font-size: 14px;">Your attendance will appear here once marked</div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Download Options -->
+        <div style="margin-top: 30px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+            <button onclick="downloadCSV()" class="btn btn-secondary" style="background: #667eea;">
+                📥 Download CSV
+            </button>
+            <button onclick="downloadPDF()" class="btn btn-secondary" style="background: #ef4444;">
+                📄 Download PDF
+            </button>
+            <button onclick="printAttendance()" class="btn btn-secondary" style="background: #10b981;">
+                🖨️ Print
+            </button>
+        </div>
+        
+    </div>
+    
+    <!-- Subject-wise Summary -->
+    <div class="card" style="margin-top: 30px;">
+        <h2 class="card-title">📊 Subject-wise Attendance Summary</h2>
+
+        {% if subject_summary is defined and subject_summary %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                {% for subject, data in subject_summary.items() %}
+                    <div style="
+                        background: {% if data.percentage >= 75 %}linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%){% else %}linear-gradient(135deg, #fee2e2 0%, #fecaca 100%){% endif %};
+                        padding: 20px;
+                        border-radius: 12px;
+                        border: 2px solid {% if data.percentage >= 75 %}#10b981{% else %}#ef4444{% endif %};
+                        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    ">
+                        <h3 style="
+                            color: {% if data.percentage >= 75 %}#065f46{% else %}#991b1b{% endif %}; 
+                            font-size: 16px; 
+                            margin-bottom: 15px;
+                            font-weight: 600;
+                        ">
+                            📖 {{ subject }}
+                        </h3>
+
+                        <div style="
+                            font-size: 42px;
+                            font-weight: bold;
+                            color: {% if data.percentage >= 75 %}#10b981{% else %}#ef4444{% endif %};
+                            margin-bottom: 10px;
+                            text-align: center;
+                        ">
+                            {{ data.percentage }}%
+                        </div>
+
+                        <div style="
+                            background: white;
+                            border-radius: 8px;
+                            padding: 10px;
+                            text-align: center;
+                        ">
+                            <div style="color: #374151; font-size: 14px; margin-bottom: 5px;">
+                                <strong>{{ data.present }}</strong> Present / 
+                                <strong>{{ data.total }}</strong> Total
+                            </div>
+                            <div style="color: #6b7280; font-size: 13px;">
+                                Absent: <strong>{{ data.absent }}</strong>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div style="
+                            width: 100%;
+                            height: 8px;
+                            background: rgba(0,0,0,0.1);
+                            border-radius: 10px;
+                            margin-top: 15px;
+                            overflow: hidden;
+                        ">
+                            <div style="
+                                width: {{ data.percentage }}%;
+                                height: 100%;
+                                background: {% if data.percentage >= 75 %}#10b981{% else %}#ef4444{% endif %};
+                                transition: width 0.3s;
+                            "></div>
+                        </div>
+
+                        {% if data.percentage < 75 %}
+                        <div style="
+                            margin-top: 10px;
+                            padding: 8px;
+                            background: #fee2e2;
+                            border-left: 3px solid #ef4444;
+                            border-radius: 4px;
+                            font-size: 12px;
+                            color: #991b1b;
+                        ">
+                            ⚠️ Below 75% - Need {{ ((75 * data.total / 100) - data.present)|round|int }} more classes
+                        </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div style="text-align: center; padding: 40px; color: #6b7280;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📊</div>
+                <div style="font-size: 18px; margin-bottom: 5px;">No subject summary available</div>
+                <div style="font-size: 14px;">Subject-wise breakdown will appear after attendance is marked</div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // Calculate and update summary on load
+    window.addEventListener('DOMContentLoaded', function() {
+        updateSummary();
+    });
+
+    function updateSummary() {
+        const rows = document.querySelectorAll('#attendanceTable tbody tr[data-status]');
+        let total = 0;
+        let present = 0;
+        let absent = 0;
+        
+        rows.forEach(row => {
+            if (row.style.display !== 'none') {
+                total++;
+                const status = row.getAttribute('data-status');
+                if (status === 'present') present++;
+                else if (status === 'absent') absent++;
+            }
+        });
+        
+        const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
+        
+        document.getElementById('totalClasses').textContent = total;
+        document.getElementById('presentCount').textContent = present;
+        document.getElementById('absentCount').textContent = absent;
+        document.getElementById('percentageDisplay').textContent = percentage + '%';
+        
+        // Change color based on percentage
+        const percentDiv = document.getElementById('percentageDisplay').parentElement;
+        if (percentage >= 75) {
+            percentDiv.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+        } else {
+            percentDiv.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+        }
+    }
+    
+    function filterAttendance() {
+        const subjectFilter = document.getElementById('subjectFilter').value;
+        const monthFilter = document.getElementById('monthFilter').value;
+        const statusFilter = document.getElementById('statusFilter').value;
+        
+        const rows = document.querySelectorAll('#attendanceTable tbody tr[data-status]');
+        
+        rows.forEach(row => {
+            const subject = row.getAttribute('data-subject');
+            const month = row.getAttribute('data-month');
+            const status = row.getAttribute('data-status');
+            
+            let show = true;
+            
+            if (subjectFilter !== 'all' && subject !== subjectFilter) show = false;
+            if (monthFilter !== 'all' && month !== monthFilter) show = false;
+            if (statusFilter !== 'all' && status !== statusFilter) show = false;
+            
+            row.style.display = show ? '' : 'none';
+        });
+        
+        // Update summary after filtering
+        updateSummary();
+    }
+    
+    function downloadCSV() {
+        const table = document.getElementById('attendanceTable');
+        const rows = table.querySelectorAll('tr');
+        let csv = [];
+        
+        rows.forEach(row => {
+            if (row.style.display !== 'none') {
+                const cols = row.querySelectorAll('td, th');
+                const rowData = [];
+                cols.forEach(col => {
+                    rowData.push('"' + col.textContent.trim().replace(/"/g, '""') + '"');
+                });
+                csv.push(rowData.join(','));
+            }
+        });
+        
+        const csvContent = csv.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'attendance_records_' + new Date().toISOString().split('T')[0] + '.csv';
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+    
+    function downloadPDF() {
+        alert('PDF download feature coming soon! For now, please use Print and save as PDF.');
+        window.print();
+    }
+    
+    function printAttendance() {
+        window.print();
+    }
+</script>
+
+<style>
+    @media print {
+        .btn, .form-group, .navbar, .sidebar {
+            display: none !important;
+        }
+        
+        .card {
+            box-shadow: none;
+            border: 1px solid #ddd;
+        }
+        
+        table {
+            font-size: 12px;
+        }
+    }
+    
+    .badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+    
+    .badge-success {
+        background: #d1fae5;
+        color: #065f46;
+        border: 1px solid #10b981;
+    }
+    
+    .badge-danger {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #ef4444;
+    }
+    
+    .badge-info {
+        background: #dbeafe;
+        color: #1e40af;
+        border: 1px solid #3b82f6;
+    }
+    
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .table th {
+        background: #f3f4f6;
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        color: #374151;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .table td {
+        padding: 12px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .table tr:hover {
+        background: #f9fafb;
+    }
+    
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        color: white;
+        transition: all 0.3s;
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
+    .btn-secondary {
+        background: #6b7280;
+    }
+</style>
+
+{% endblock %}

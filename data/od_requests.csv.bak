@@ -1,0 +1,5 @@
+request_id,student_id,date,start_time,end_time,reason,proof_file,status,submitted_at,approved_by,approved_at,remarks
+OD_1768848238,STU001,2026-01-20,09:00,17:00,I am participating in a hackathon competition,STU001_1768848238.417237.pdf,approved,2026-01-20 00:13:58,STAFF001,2026-01-20 00:22:31,okey done jancy
+OD_1768905445,STU002,,,2026-01-21,09:06,16:06,,JHFYHLKJHGFTGKJIGIUJKJ,,pending,2026-01-20 16:07:25,,,
+OD_1770095746,STU002,,,2026-02-05,11:45,13:47,,JGDFYIJGFKYTDU,,pending,2026-02-03 10:45:46,,,
+OD_1770096794,STU002,2026-02-14,11:05,11:08,asdfghjkasdfghjksdfghjk,STU002_1770096794.169067.pdf,pending,2026-02-03 11:03:14,,,

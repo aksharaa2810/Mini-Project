@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/student.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container student-dashboard">
+    
+    <!-- Welcome Banner -->
+    <div class="welcome-banner">
+        <h1>Welcome, {{ name }}!</h1>
+        <p>Student ID: {{ session.user_id }}</p>
+        <p>📅 {{ current_date }}</p>
+    </div>
+    
+    <!-- Attendance Summary -->
+    <div class="attendance-summary">
+        <div class="attendance-box">
+            <div class="percentage">{{ attendance.percentage }}%</div>
+            <div class="label">Overall Attendance</div>
+        </div>
+        
+        <div class="attendance-box present">
+            <div class="percentage">{{ attendance.present }}</div>
+            <div class="label">Present</div>
+        </div>
+        
+        <div class="attendance-box absent">
+            <div class="percentage">{{ attendance.absent }}</div>
+            <div class="label">Absent</div>
+        </div>
+        
+        <div class="attendance-box">
+            <div class="percentage">{{ attendance.total }}</div>
+            <div class="label">Total Classes</div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <h2 style="color: white; margin: 40px 0 20px;">Quick Actions</h2>
+    <div class="quick-actions">
+        
+        <a href="{{ url_for('student.attendance') }}" class="action-card attendance">
+            <div class="icon">📊</div>
+            <h3>View Attendance</h3>
+            <p>Check your attendance records</p>
+        </a>
+        
+        <a href="{{ url_for('student.apply_od') }}" class="action-card od">
+            <div class="icon">📝</div>
+            <h3>Apply for OD</h3>
+            <p>Submit on-duty application</p>
+        </a>
+        
+        <a href="{{ url_for('student.hostel_pass') }}" class="action-card hostel">
+            <div class="icon">🏠</div>
+            <h3>Hostel Pass</h3>
+            <p>Request hostel out-pass</p>
+        </a>
+        
+        <a href="{{ url_for('student.bus_pass') }}" class="action-card bus">
+            <div class="icon">🚌</div>
+            <h3>Bus Pass</h3>
+            <p>Generate bus QR pass</p>
+        </a>
+        
+    </div>
+    
+    <!-- Today's Schedule -->
+    <div class="card" style="margin-top: 40px;">
+        <h2 class="card-title">Today's Schedule</h2>
+        
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Period</th>
+                    <th>Time</th>
+                    <th>Subject</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if schedule %}
+                    {% for class in schedule %}
+                    <tr>
+                        <td>{{ class.period }}</td>
+                        <td>{{ class.start }} - {{ class.end }}</td>
+                        <td>{{ class.subject }}</td>
+                        <td>
+                            {% if class.attended %}
+                                <span class="badge badge-success">Present</span>
+                            {% elif class.is_current %}
+                                <span class="badge badge-warning">In Progress</span>
+                            {% else %}
+                                <span class="badge badge-info">Upcoming</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: #6b7280;">
+                            No classes scheduled for today
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Recent Notifications -->
+    <div class="card" style="margin-top: 40px;">
+        <h2 class="card-title">Recent Notifications</h2>
+        
+        {% if notifications %}
+            {% for notification in notifications %}
+            <div class="alert alert-{{ notification.type }}">
+                <strong>{{ notification.title }}</strong><br>
+                {{ notification.message }}<br>
+                <small style="opacity: 0.8;">{{ notification.time }}</small>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="color: #6b7280;">No new notifications</p>
+        {% endif %}
+    </div>
+    
+</div>
+
+<script>
+    // Auto-refresh dashboard every 5 minutes
+    setTimeout(function() {
+        location.reload();
+    }, 300000);
+</script>
+{% endblock %}

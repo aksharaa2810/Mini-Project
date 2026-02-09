@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+
+{% block title %}View Attendance{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container admin-dashboard">
+    
+    <div class="card">
+        <h1 class="card-title">Class Attendance</h1>
+        
+        <!-- Filters -->
+        <div class="grid grid-3" style="margin-bottom: 30px;">
+            <div class="form-group">
+                <label for="classFilter">Select Class</label>
+                <select id="classFilter" class="form-control" onchange="filterAttendance()">
+                    <option value="">All Classes</option>
+                    <option value="CSE-A">CSE-A</option>
+                    <option value="CSE-B">CSE-B</option>
+                    <option value="ECE-A">ECE-A</option>
+                    <option value="ECE-B">ECE-B</option>
+                    <option value="MECH-A">MECH-A</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="dateFilter">Select Date</label>
+                <input type="date" 
+                       id="dateFilter" 
+                       class="form-control" 
+                       value="{{ selected_date }}"
+                       onchange="filterAttendance()">
+            </div>
+            
+            <div class="form-group">
+                <label for="periodFilter">Select Period</label>
+                <select id="periodFilter" class="form-control" onchange="filterAttendance()">
+                    <option value="">All Periods</option>
+                    <option value="1">Period 1</option>
+                    <option value="2">Period 2</option>
+                    <option value="3">Period 3</option>
+                    <option value="4">Period 4</option>
+                    <option value="5">Period 5</option>
+                    <option value="6">Period 6</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Attendance Summary -->
+        <div class="grid grid-4" style="margin-bottom: 30px;">
+            <div class="stat-box">
+                <div class="info">
+                    <h3 id="totalStudents">{{ attendance_summary.total }}</h3>
+                    <p>Total Students</p>
+                </div>
+            </div>
+            
+            <div class="stat-box" style="background: #d1fae5;">
+                <div class="info">
+                    <h3 id="presentCount" style="color: #065f46;">{{ attendance_summary.present }}</h3>
+                    <p>Present</p>
+                </div>
+            </div>
+            
+            <div class="stat-box" style="background: #fee2e2;">
+                <div class="info">
+                    <h3 id="absentCount" style="color: #991b1b;">{{ attendance_summary.absent }}</h3>
+                    <p>Absent</p>
+                </div>
+            </div>
+            
+            <div class="stat-box" style="background: #dbeafe;">
+                <div class="info">
+                    <h3 id="attendancePercent" style="color: #1e40af;">{{ attendance_summary.percentage }}%</h3>
+                    <p>Attendance</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Search Box -->
+        <div style="margin-bottom: 20px;">
+            <input type="text" 
+                   id="searchInput" 
+                   class="form-control" 
+                   placeholder="🔍 Search by student name or ID..."
+                   onkeyup="searchTable('searchInput', 'attendanceTable')">
+        </div>
+        
+        <!-- Attendance Table -->
+        <div style="overflow-x: auto;">
+            <table class="table" id="attendanceTable">
+                <thead>
+                    <tr>
+                        <th>S.No</th>
+                        <th>Student ID</th>
+                        <th>Student Name</th>
+                        <th>Class</th>
+                        <th>Period</th>
+                        <th>Subject</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th>Marked By</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if attendance %}
+                        {% for record in attendance %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ record.student_id }}</td>
+                            <td>{{ record.student_name }}</td>
+                            <td>{{ record.class }}</td>
+                            <td>{{ record.period }}</td>
+                            <td>{{ record.subject }}</td>
+                            <td>{{ record.time }}</td>
+                            <td>
+                                {% if record.status == 'present' %}
+                                    <span class="badge badge-success">Present</span>
+                                {% elif record.status == 'absent' %}
+                                    <span class="badge badge-danger">Absent</span>
+                                {% elif record.status == 'od' %}
+                                    <span class="badge badge-info">On-Duty</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ record.marked_by }}</td>
+                            <td>
+                                <button class="btn btn-secondary" 
+                                        style="padding: 5px 15px; font-size: 14px;"
+                                        onclick="editAttendance('{{ record.student_id }}', '{{ record.date }}', '{{ record.period }}')">
+                                    Edit
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="10" style="text-align: center; color: #6b7280;">
+                                No attendance records found
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Export Options -->
+        <div style="margin-top: 30px; display: flex; gap: 15px; justify-content: flex-end;">
+            <button onclick="exportToCSV()" class="btn btn-secondary">
+                📥 Export CSV
+            </button>
+            <button onclick="exportToExcel()" class="btn btn-secondary">
+                📊 Export Excel
+            </button>
+            <button onclick="window.print()" class="btn btn-secondary">
+                🖨️ Print
+            </button>
+            <button onclick="sendEmail()" class="btn btn-primary">
+                📧 Email Report
+            </button>
+        </div>
+        
+    </div>
+    
+    <!-- Defaulters List -->
+    <div class="card" style="margin-top: 40px;">
+        <h2 class="card-title">Students Below 75% Attendance</h2>
+        
+        <div style="overflow-x: auto;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Student Name</th>
+                        <th>Class</th>
+                        <th>Total Classes</th>
+                        <th>Present</th>
+                        <th>Absent</th>
+                        <th>Percentage</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if defaulters %}
+                        {% for student in defaulters %}
+                        <tr>
+                            <td>{{ student.student_id }}</td>
+                            <td>{{ student.name }}</td>
+                            <td>{{ student.class }}</td>
+                            <td>{{ student.total }}</td>
+                            <td>{{ student.present }}</td>
+                            <td>{{ student.absent }}</td>
+                            <td>
+                                <span class="badge badge-danger">{{ student.percentage }}%</span>
+                            </td>
+                            <td>
+                                <button class="btn btn-primary" 
+                                        style="padding: 5px 15px; font-size: 14px;"
+                                        onclick="notifyStudent('{{ student.student_id }}')">
+                                    Notify
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="8" style="text-align: center; color: #6b7280;">
+                                All students have attendance above 75%
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+</div>
+
+<!-- Edit Attendance Modal -->
+<div class="modal" id="editModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Edit Attendance</h2>
+            <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
+        </div>
+        <div style="padding: 20px;">
+            <form id="editAttendanceForm">
+                <div class="form-group">
+                    <label>Student ID</label>
+                    <input type="text" id="editStudentId" class="form-control" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label>New Status</label>
+                    <select id="editStatus" class="form-control">
+                        <option value="present">Present</option>
+                        <option value="absent">Absent</option>
+                        <option value="od">On-Duty</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Reason for Change</label>
+                    <textarea id="editReason" class="form-control" rows="3" placeholder="Enter reason..."></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" onclick="saveEdit()" class="btn btn-primary" style="flex: 1;">
+                        Save Changes
+                    </button>
+                    <button type="button" onclick="closeModal('editModal')" class="btn btn-secondary" style="flex: 1;">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function filterAttendance() {
+        const classFilter = document.getElementById('classFilter').value;
+        const dateFilter = document.getElementById('dateFilter').value;
+        const periodFilter = document.getElementById('periodFilter').value;
+        
+        // Reload page with filters
+        const params = new URLSearchParams();
+        if (classFilter) params.append('class', classFilter);
+        if (dateFilter) params.append('date', dateFilter);
+        if (periodFilter) params.append('period', periodFilter);
+        
+        window.location.href = `{{ url_for('staff.view_attendance') }}?${params.toString()}`;
+    }
+    
+    function searchTable(inputId, tableId) {
+        window.appUtils.searchTable(inputId, tableId);
+    }
+    
+    function editAttendance(studentId, date, period) {
+        document.getElementById('editStudentId').value = studentId;
+        window.appUtils.openModal('editModal');
+    }
+    
+    function saveEdit() {
+        const studentId = document.getElementById('editStudentId').value;
+        const newStatus = document.getElementById('editStatus').value;
+        const reason = document.getElementById('editReason').value;
+        
+        if (!reason) {
+            alert('Please provide a reason for changing attendance');
+            return;
+        }
+        
+        // Submit to server
+        fetch('/staff/edit-attendance', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                student_id: studentId,
+                status: newStatus,
+                reason: reason
+            })
+        }).then(response => {
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Failed to update attendance');
+            }
+        });
+    }
+    
+    function exportToCSV() {
+        window.appUtils.downloadCSV('attendanceTable', 'attendance_report.csv');
+    }
+    
+    function exportToExcel() {
+        alert('Excel export functionality - Coming soon!');
+    }
+    
+    function sendEmail() {
+        alert('Email report functionality - Coming soon!');
+    }
+    
+    function notifyStudent(studentId) {
+        if (confirm(`Send low attendance notification to ${studentId}?`)) {
+            fetch('/staff/notify-student', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ student_id: studentId })
+            }).then(response => {
+                if (response.ok) {
+                    alert('Notification sent successfully');
+                } else {
+                    alert('Failed to send notification');
+                }
+            });
+        }
+    }
+</script>
+{% endblock %}

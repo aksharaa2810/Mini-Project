@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}Apply for On-Duty{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/student.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container student-dashboard">
+    
+    <div class="od-form">
+        <h1 style="color: #667eea; margin-bottom: 10px;">Apply for On-Duty (OD)</h1>
+        <p style="color: #6b7280; margin-bottom: 30px;">
+            Submit your on-duty application for approval
+        </p>
+        
+        <form method="POST" action="{{ url_for('student.apply_od') }}" enctype="multipart/form-data" id="odForm">
+            
+            <div class="grid grid-2">
+                <!-- Date -->
+                <div class="form-group">
+                    <label for="date">Date <span style="color: red;">*</span></label>
+                    <input type="date" 
+                           name="date" 
+                           id="date" 
+                           class="form-control" 
+                           min="{{ min_date }}"
+                           required>
+                </div>
+                
+                <!-- Start Time -->
+                <div class="form-group">
+                    <label for="start_time">Start Time <span style="color: red;">*</span></label>
+                    <input type="time" 
+                           name="start_time" 
+                           id="start_time" 
+                           class="form-control" 
+                           required>
+                </div>
+            </div>
+            
+            <div class="grid grid-2">
+                <!-- End Time -->
+                <div class="form-group">
+                    <label for="end_time">End Time <span style="color: red;">*</span></label>
+                    <input type="time" 
+                           name="end_time" 
+                           id="end_time" 
+                           class="form-control" 
+                           required>
+                </div>
+                
+                <!-- Type of OD -->
+                <div class="form-group">
+                    <label for="od_type">Type of OD <span style="color: red;">*</span></label>
+                    <select name="od_type" id="od_type" class="form-control" required>
+                        <option value="">Select Type</option>
+                        <option value="seminar">Seminar/Workshop</option>
+                        <option value="competition">Competition</option>
+                        <option value="sports">Sports Event</option>
+                        <option value="cultural">Cultural Event</option>
+                        <option value="placement">Placement Drive</option>
+                        <option value="medical">Medical Emergency</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Reason -->
+            <div class="form-group">
+                <label for="reason">Reason for OD <span style="color: red;">*</span></label>
+                <textarea name="reason" 
+                          id="reason" 
+                          class="form-control" 
+                          rows="4" 
+                          placeholder="Please provide detailed reason for your on-duty request..."
+                          required
+                          minlength="10"></textarea>
+                <small style="color: #6b7280;">Minimum 10 characters required</small>
+            </div>
+            
+            <!-- Venue -->
+            <div class="form-group">
+                <label for="venue">Venue/Location</label>
+                <input type="text" 
+                       name="venue" 
+                       id="venue" 
+                       class="form-control" 
+                       placeholder="Enter venue or location">
+            </div>
+            
+            <!-- Upload Proof -->
+            <div class="form-group">
+                <label for="proof">Upload Supporting Document (Optional)</label>
+                <div class="file-upload" onclick="document.getElementById('proof').click()">
+                    <div class="icon">📄</div>
+                    <p>Click to upload proof document (PDF only)</p>
+                    <p style="font-size: 12px; color: #6b7280; margin-top: 5px;">Max size: 5MB</p>
+                </div>
+                <input type="file" 
+                       name="proof" 
+                       id="proof" 
+                       accept=".pdf" 
+                       style="display: none;"
+                       onchange="updateFileName()">
+                <div id="fileName" style="margin-top: 10px; color: #667eea; font-size: 14px;"></div>
+            </div>
+            
+            <!-- Contact Number -->
+            <div class="form-group">
+                <label for="contact">Contact Number During OD <span style="color: red;">*</span></label>
+                <input type="tel" 
+                       name="contact" 
+                       id="contact" 
+                       class="form-control" 
+                       placeholder="Enter contact number"
+                       pattern="[0-9]{10}"
+                       required>
+            </div>
+            
+            <!-- Terms and Conditions -->
+            <div class="form-group">
+                <label style="display: flex; align-items: flex-start; cursor: pointer;">
+                    <input type="checkbox" 
+                           name="terms" 
+                           id="terms" 
+                           required 
+                           style="margin-right: 10px; margin-top: 3px;">
+                    <span style="font-size: 14px; color: #6b7280;">
+                        I hereby declare that the information provided is true and accurate. 
+                        I understand that providing false information may lead to disciplinary action.
+                    </span>
+                </label>
+            </div>
+            
+            <!-- Important Note -->
+            <div class="alert alert-warning">
+                <strong>⚠️ Important:</strong> OD must be approved at least 10 minutes before the class starts.
+                You will receive email notification once approved.
+            </div>
+            
+            <!-- Submit Buttons -->
+            <div style="display: flex; gap: 15px; margin-top: 30px;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">
+                    Submit Application
+                </button>
+                <button type="reset" class="btn btn-secondary" style="flex: 1;">
+                    Reset Form
+                </button>
+            </div>
+            
+        </form>
+    </div>
+    
+    <!-- Previous OD Applications -->
+    <div class="card" style="margin-top: 40px;">
+        <h2 class="card-title">My OD Applications</h2>
+        
+        <div style="overflow-x: auto;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Request ID</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th>Submitted On</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if od_requests %}
+                        {% for request in od_requests %}
+                        <tr>
+                            <td>{{ request.request_id }}</td>
+                            <td>{{ request.date }}</td>
+                            <td>{{ request.start_time }} - {{ request.end_time }}</td>
+                            <td>{{ request.reason[:50] }}{% if request.reason|length > 50 %}...{% endif %}</td>
+                            <td>
+                                {% if request.status == 'approved' %}
+                                    <span class="badge badge-success">Approved</span>
+                                {% elif request.status == 'rejected' %}
+                                    <span class="badge badge-danger">Rejected</span>
+                                {% elif request.status == 'pending' %}
+                                    <span class="badge badge-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ request.submitted_at }}</td>
+                            <td>
+                                <button class="btn btn-secondary" 
+                                        onclick="viewDetails('{{ request.request_id }}')"
+                                        style="padding: 5px 15px; font-size: 14px;">
+                                    View
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" style="text-align: center; color: #6b7280;">
+                                No OD applications yet
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+</div>
+
+<!-- Modal for OD Details -->
+<div class="modal" id="odDetailsModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>OD Application Details</h2>
+            <button class="modal-close" onclick="closeModal('odDetailsModal')">&times;</button>
+        </div>
+        <div id="odDetailsContent">
+            <!-- Content will be loaded dynamically -->
+        </div>
+    </div>
+</div>
+
+<script>
+    // Update file name when file is selected
+    function updateFileName() {
+        const input = document.getElementById('proof');
+        const fileName = document.getElementById('fileName');
+        
+        if (input.files.length > 0) {
+            fileName.textContent = '✓ File selected: ' + input.files[0].name;
+        } else {
+            fileName.textContent = '';
+        }
+    }
+    
+    // Form validation
+    document.getElementById('odForm').addEventListener('submit', function(e) {
+        const startTime = document.getElementById('start_time').value;
+        const endTime = document.getElementById('end_time').value;
+        
+        if (startTime && endTime && endTime <= startTime) {
+            e.preventDefault();
+            alert('End time must be after start time');
+        }
+    });
+    
+    // View OD details
+    function viewDetails(requestId) {
+        // In production, fetch details from server
+        window.appUtils.openModal('odDetailsModal');
+        document.getElementById('odDetailsContent').innerHTML = `
+            <div class="spinner"></div>
+            <p style="text-align: center;">Loading details...</p>
+        `;
+        
+        // Simulate API call
+        setTimeout(() => {
+            document.getElementById('odDetailsContent').innerHTML = `
+                <p><strong>Request ID:</strong> ${requestId}</p>
+                <p><strong>Status:</strong> <span class="badge badge-warning">Pending</span></p>
+                <p style="margin-top: 20px;">Details will be loaded here...</p>
+            `;
+        }, 500);
+    }
+    
+    // Set minimum date to today
+    document.getElementById('date').min = new Date().toISOString().split('T')[0];
+</script>
+{% endblock %}
