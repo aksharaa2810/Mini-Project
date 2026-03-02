@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 
 from models.face_detection import FaceDetector
+from utils.hybrid_face_detection import hybrid_face_detection, HybridDetectionConfig
 
 
 _HYBRID_DETECTOR = None
@@ -31,8 +32,10 @@ def detect_face_simple(image_np):
         list: List of detected faces (rectangles)
     """
     try:
-        detector = _get_detector()
-        faces = detector.detect_faces_np(image_np)
+        # Prefer the explicit hybrid pipeline (Haar proposals + ROI MTCNN refine).
+        # Falls back to Haar-only automatically if mtcnn isn't installed.
+        config = HybridDetectionConfig(min_confidence=0.90, min_box_size=40, draw_landmarks=False)
+        _, faces = hybrid_face_detection(image_np, config=config)
         rects = [tuple(f["box"]) for f in faces]
         print(f"Detected {len(rects)} face(s)")
         return rects
