@@ -1,6 +1,7 @@
 """
-Face Detection using MTCNN (Multi-task Cascaded Convolutional Networks)
-Detects faces in images with high accuracy
+Face Detection using MTCNN
+Detects multiple faces in images with high accuracy using Multi-task Cascaded
+Convolutional Networks. Supports tuning for better multi-face and small-face detection.
 """
 
 import cv2
@@ -9,92 +10,140 @@ from mtcnn import MTCNN
 from PIL import Image
 import base64
 from io import BytesIO
+import os
+
+
+def _iou(box1, box2):
+    """Compute Intersection over Union of two boxes [x, y, w, h]."""
+    x1, y1, w1, h1 = box1
+    x2, y2, w2, h2 = box2
+    xi1 = max(x1, x2)
+    yi1 = max(y1, y2)
+    xi2 = min(x1 + w1, x2 + w2)
+    yi2 = min(y1 + h1, y2 + h2)
+    if xi2 <= xi1 or yi2 <= yi1:
+        return 0.0
+    inter = (xi2 - xi1) * (yi2 - yi1)
+    a1 = w1 * h1
+    a2 = w2 * h2
+    return inter / (a1 + a2 - inter + 1e-6)
+
+
+def _nms(faces, iou_threshold=0.5):
+    """Non-maximum suppression: keep one box per face, prefer higher confidence."""
+    if not faces:
+        return []
+    boxes = [f["box"] for f in faces]
+    confs = [f["confidence"] for f in faces]
+    keep = []
+    order = np.argsort(confs)[::-1]
+    used = [False] * len(faces)
+    for i in order:
+        if used[i]:
+            continue
+        keep.append(i)
+        for j in range(len(faces)):
+            if used[j]:
+                continue
+            if _iou(boxes[i], boxes[j]) > iou_threshold:
+                used[j] = True
+    return [faces[k] for k in sorted(keep)]
+
 
 class FaceDetector:
-    def __init__(self, min_confidence=0.9):
+    def __init__(self, min_confidence=0.9, min_face_size=20, use_nms=True, nms_iou_threshold=0.5,
+                 mtcnn_kwargs=None):
         """
-        Initialize MTCNN face detector
-        
+        Initialize MTCNN face detector for high-accuracy multiple face detection.
+
         Args:
-            min_confidence (float): Minimum confidence threshold for detection
+            min_confidence (float): Minimum confidence threshold for detection (0–1).
+            min_face_size (int): Minimum face size in pixels (smaller = detect more/distant faces).
+            use_nms (bool): Apply NMS to remove overlapping duplicate boxes.
+            nms_iou_threshold (float): IoU threshold for NMS (overlapping boxes above this are merged).
+            mtcnn_kwargs (dict): Optional kwargs passed to MTCNN.detect_faces() for tuning, e.g.:
+                scale_factor (float): Image pyramid scale (default 0.709; lower = more scales, slower).
+                threshold_pnet, threshold_rnet, threshold_onet (float): Stage thresholds.
         """
-        self.detector = MTCNN(min_face_size=20)
+        self.detector = MTCNN()
         self.min_confidence = min_confidence
-    
+        self.min_face_size = min_face_size
+        self.use_nms = use_nms
+        self.nms_iou_threshold = nms_iou_threshold
+        self.mtcnn_kwargs = mtcnn_kwargs or {}
+
+    def _filter_and_sort(self, results):
+        """Filter by confidence, optionally NMS, and sort by confidence descending."""
+        faces = []
+        for res in results:
+            conf = res.get("confidence", 0)
+            if conf >= self.min_confidence:
+                faces.append({
+                    "box": res["box"],
+                    "confidence": conf,
+                    "keypoints": res.get("keypoints", {})
+                })
+        if self.use_nms and len(faces) > 1:
+            faces = _nms(faces, self.nms_iou_threshold)
+        faces.sort(key=lambda f: f["confidence"], reverse=True)
+        return faces
+
     def detect_faces(self, image_path):
         """
-        Detect faces in an image file
-        
+        Detect all faces in an image file using MTCNN (multiple faces, high accuracy).
+
         Args:
-            image_path (str): Path to image file
-            
+            image_path (str): Path to image file.
+
         Returns:
-            list: List of detected face bounding boxes and landmarks
+            list: List of detected face dicts with 'box', 'confidence', 'keypoints'.
         """
         try:
-            # Read image
             image = cv2.imread(image_path)
             if image is None:
-                print(f"Error: Unable to load image from {image_path}")
                 return []
-            
-            # Convert BGR to RGB
+
             image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            
-            # Detect faces
-            faces = self.detector.detect_faces(image_rgb)
-            
-            # Filter by confidence
-            filtered_faces = [
-                face for face in faces 
-                if face['confidence'] >= self.min_confidence
-            ]
-            
-            return filtered_faces
-            
+            kwargs = {"min_face_size": self.min_face_size, **self.mtcnn_kwargs}
+            try:
+                results = self.detector.detect_faces(image_rgb, **kwargs)
+            except TypeError:
+                results = self.detector.detect_faces(image_rgb)
+
+            faces = self._filter_and_sort(results)
+            print(f"Detected {len(faces)} face(s) using MTCNN")
+            return faces
+
         except Exception as e:
-            print(f"Error in face detection: {str(e)}")
+            print(f"Error in MTCNN detection: {str(e)}")
             return []
     
     def detect_faces_from_base64(self, base64_string):
         """
-        Detect faces from base64 encoded image
-        
+        Detect all faces from base64 encoded image (multiple faces, high accuracy).
+
         Args:
-            base64_string (str): Base64 encoded image string
-            
+            base64_string (str): Base64 encoded image string.
+
         Returns:
-            list: List of detected faces
+            list: List of detected face dicts with 'box', 'confidence', 'keypoints'.
         """
         try:
-            # Remove data URL prefix if present
-            if ',' in base64_string:
-                base64_string = base64_string.split(',')[1]
-            
-            # Decode base64
+            if "," in base64_string:
+                base64_string = base64_string.split(",")[1]
+
             image_data = base64.b64decode(base64_string)
             image = Image.open(BytesIO(image_data))
-            
-            # Convert to numpy array
-            image_np = np.array(image)
-            
-            # Convert to RGB if needed
-            if len(image_np.shape) == 2:  # Grayscale
-                image_np = cv2.cvtColor(image_np, cv2.COLOR_GRAY2RGB)
-            elif image_np.shape[2] == 4:  # RGBA
-                image_np = cv2.cvtColor(image_np, cv2.COLOR_RGBA2RGB)
-            
-            # Detect faces
-            faces = self.detector.detect_faces(image_np)
-            
-            # Filter by confidence
-            filtered_faces = [
-                face for face in faces 
-                if face['confidence'] >= self.min_confidence
-            ]
-            
-            return filtered_faces
-            
+            image_np = np.array(image.convert("RGB"))
+
+            kwargs = {"min_face_size": self.min_face_size, **self.mtcnn_kwargs}
+            try:
+                results = self.detector.detect_faces(image_np, **kwargs)
+            except TypeError:
+                results = self.detector.detect_faces(image_np)
+
+            return self._filter_and_sort(results)
+
         except Exception as e:
             print(f"Error detecting faces from base64: {str(e)}")
             return []
@@ -120,15 +169,17 @@ class FaceDetector:
             # Get bounding box coordinates
             x, y, w, h = face_box['box']
             
-            # Add margin
-            margin = 20
-            x = max(0, x - margin)
-            y = max(0, y - margin)
-            w = w + 2 * margin
-            h = h + 2 * margin
+            # Ensure coordinates are within image bounds
+            img_h, img_w = image.shape[:2]
+            x, y = max(0, x), max(0, y)
+            w = min(w, img_w - x)
+            h = min(h, img_h - y)
             
             # Extract face
             face = image[y:y+h, x:x+w]
+            
+            if face.size == 0:
+                return None
             
             # Resize to target size
             face_resized = cv2.resize(face, target_size)
@@ -168,15 +219,18 @@ class FaceDetector:
             # Get bounding box
             x, y, w, h = face_box['box']
             
-            # Add margin
-            margin = 20
-            x = max(0, x - margin)
-            y = max(0, y - margin)
-            w = min(image_np.shape[1] - x, w + 2 * margin)
-            h = min(image_np.shape[0] - y, h + 2 * margin)
+            # Ensure coordinates are within image bounds
+            img_h, img_w = image_np.shape[:2]
+            x, y = max(0, x), max(0, y)
+            w = min(w, img_w - x)
+            h = min(h, img_h - y)
             
             # Extract and resize face
             face = image_np[y:y+h, x:x+w]
+            
+            if face.size == 0:
+                return None
+                
             face_resized = cv2.resize(face, target_size)
             
             return face_resized
@@ -219,8 +273,9 @@ class FaceDetector:
                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                 
                 # Draw landmarks
-                for key, point in face['keypoints'].items():
-                    cv2.circle(image, point, 2, (0, 0, 255), 2)
+                if 'keypoints' in face:
+                    for key, point in face['keypoints'].items():
+                        cv2.circle(image, point, 2, (0, 0, 255), 2)
             
             # Save image
             cv2.imwrite(output_path, image)
@@ -269,17 +324,22 @@ class FaceDetector:
             bool: True if face is frontal
         """
         try:
-            keypoints = face_box['keypoints']
+            keypoints = face_box.get('keypoints', {})
+            if not keypoints:
+                return True
             
             # Get eye positions
-            left_eye = keypoints['left_eye']
-            right_eye = keypoints['right_eye']
+            left_eye = keypoints.get('left_eye')
+            right_eye = keypoints.get('right_eye')
+            nose = keypoints.get('nose')
+            
+            if not all([left_eye, right_eye, nose]):
+                return True
             
             # Calculate eye distance
             eye_distance = abs(left_eye[0] - right_eye[0])
-            
-            # Get nose and mouth positions
-            nose = keypoints['nose']
+            if eye_distance == 0:
+                return True
             
             # Check if nose is centered between eyes
             eye_center = (left_eye[0] + right_eye[0]) / 2
@@ -292,7 +352,7 @@ class FaceDetector:
             
         except Exception as e:
             print(f"Error checking frontal face: {str(e)}")
-            return False
+            return True
 
 
 # Utility functions
@@ -341,12 +401,15 @@ if __name__ == "__main__":
     
     # Test detection
     test_image = "test_image.jpg"
-    faces = detector.detect_faces(test_image)
-    
-    print(f"Detected {len(faces)} faces")
-    
-    for i, face in enumerate(faces):
-        print(f"Face {i+1}:")
-        print(f"  Confidence: {face['confidence']:.2f}")
-        print(f"  Box: {face['box']}")
-        print(f"  Landmarks: {face['keypoints']}")
+    if os.path.exists(test_image):
+        faces = detector.detect_faces(test_image)
+        
+        print(f"Detected {len(faces)} faces")
+        
+        for i, face in enumerate(faces):
+            print(f"Face {i+1}:")
+            print(f"  Confidence: {face['confidence']:.2f}")
+            print(f"  Box: {face['box']}")
+            print(f"  Landmarks: {face['keypoints']}")
+    else:
+        print(f"Test image {test_image} not found")
