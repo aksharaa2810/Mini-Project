@@ -2,7 +2,12 @@ import time
 from dataclasses import dataclass
 
 import cv2
-from mtcnn import MTCNN
+try:
+    from mtcnn import MTCNN  # optional dependency at runtime
+    _HAS_MTCNN = True
+except Exception:
+    MTCNN = None
+    _HAS_MTCNN = False
 
 
 @dataclass(frozen=True)
@@ -13,6 +18,7 @@ class HybridDetectionConfig:
     haar_min_neighbors: int = 5
     haar_pad_ratio: float = 0.15  # expand Haar ROI before MTCNN
     draw_landmarks: bool = True
+    allow_haar_fallback: bool = True  # if mtcnn not installed, keep Haar boxes only
 
 
 def _clip_xywh(box, img_w, img_h):
@@ -81,7 +87,10 @@ def hybrid_face_detection(
         raise RuntimeError("Failed to load Haar Cascade classifier.")
 
     if mtcnn is None:
-        mtcnn = MTCNN()
+        if not _HAS_MTCNN:
+            mtcnn = None
+        else:
+            mtcnn = MTCNN()
 
     img_h, img_w = image.shape[:2]
     annotated = image.copy()
@@ -96,6 +105,29 @@ def hybrid_face_detection(
     )
 
     final_faces = []
+
+    # If mtcnn isn't available, return Haar-only detections (fast fallback).
+    if mtcnn is None:
+        if not config.allow_haar_fallback:
+            raise ModuleNotFoundError(
+                "mtcnn is not installed. Install it with: pip install mtcnn"
+            )
+        for (x, y, w, h) in haar_rects:
+            x, y, w, h = _clip_xywh((x, y, w, h), img_w, img_h)
+            if w < config.min_box_size or h < config.min_box_size:
+                continue
+            final_faces.append({"box": [x, y, w, h], "confidence": 1.0, "keypoints": {}})
+            cv2.rectangle(annotated, (x, y), (x + w, y + h), (0, 255, 255), 2)
+            cv2.putText(
+                annotated,
+                "HAAR",
+                (x, max(0, y - 10)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (0, 255, 255),
+                2,
+            )
+        return annotated, final_faces
 
     # 2) For each Haar ROI, run MTCNN on crop (accuracy)
     for (x, y, w, h) in haar_rects:
@@ -154,6 +186,8 @@ def webcam_hybrid_demo(camera_index=0):
         raise RuntimeError("Could not open webcam.")
 
     haar = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+    if not _HAS_MTCNN:
+        raise ModuleNotFoundError("mtcnn is not installed. Install it with: pip install mtcnn")
     mtcnn = MTCNN()
     config = HybridDetectionConfig()
 
