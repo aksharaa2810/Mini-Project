@@ -6,7 +6,12 @@ Convolutional Networks. Supports tuning for better multi-face and small-face det
 
 import cv2
 import numpy as np
-from mtcnn import MTCNN
+try:
+    from mtcnn import MTCNN  # optional dependency
+    _HAS_MTCNN = True
+except Exception:
+    MTCNN = None
+    _HAS_MTCNN = False
 from PIL import Image
 import base64
 from io import BytesIO
@@ -107,7 +112,12 @@ class FaceDetector:
             haar_min_size (tuple[int,int]): Haar minimum detected face size.
             haar_pad_ratio (float): Padding added around Haar boxes before MTCNN refine.
         """
-        self.detector = MTCNN()
+        if not _HAS_MTCNN and (mode or "hybrid").lower() in {"hybrid", "mtcnn"}:
+            # Keep the app running even when mtcnn isn't installed.
+            mode = "haar"
+            fallback_to_mtcnn = False
+
+        self.detector = MTCNN() if _HAS_MTCNN else None
         self.haar = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
         self.min_confidence = min_confidence
         self.min_face_size = min_face_size
@@ -138,6 +148,8 @@ class FaceDetector:
         return faces
 
     def _mtcnn_detect_rgb(self, image_rgb):
+        if not _HAS_MTCNN or self.detector is None:
+            return []
         kwargs = {"min_face_size": self.min_face_size, **self.mtcnn_kwargs}
         try:
             results = self.detector.detect_faces(image_rgb, **kwargs)
