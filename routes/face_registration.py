@@ -294,6 +294,10 @@ def register():
         
         <!-- CAMERA SECTION -->
         <div id="cameraSection" class="camera-section hidden">
+            <div style="margin-bottom: 15px; text-align: center;">
+                <label style="color: white; margin-right: 10px;">Select Camera:</label>
+                <select id="cameraSelect" style="padding: 8px; border-radius: 5px; min-width: 200px;"></select>
+            </div>
             <video id="video" autoplay playsinline></video>
             <canvas id="canvas"></canvas>
             <div class="controls">
@@ -315,14 +319,38 @@ def register():
     </div>
     
     <script>
-        let video, canvas, stream;
+        let video, canvas, stream, cameraSelect;
         let capturedCount = 0;
         let studentData = {};
         
-        window.onload = () => {
+        window.onload = async () => {
             video = document.getElementById('video');
             canvas = document.getElementById('canvas');
+            cameraSelect = document.getElementById('cameraSelect');
+            await populateCameras();
         };
+
+        async function populateCameras() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                
+                cameraSelect.innerHTML = '';
+                videoDevices.forEach((device, index) => {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.text = device.label || `Camera ${index + 1}`;
+                    cameraSelect.appendChild(option);
+                });
+
+                if (videoDevices.length === 0) {
+                    cameraSelect.innerHTML = '<option>No camera found</option>';
+                    cameraSelect.disabled = true;
+                }
+            } catch (e) {
+                console.error('Error enumerating devices:', e);
+            }
+        }
         
         function showAlert(msg, type) {
             const alertBox = document.getElementById('alertBox');
@@ -371,9 +399,15 @@ def register():
             
             // Start camera
             try {
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'user', width: 1280, height: 720 }
-                });
+                const deviceId = cameraSelect.value;
+                const constraints = {
+                    video: { 
+                        width: 1280, 
+                        height: 720,
+                        deviceId: deviceId ? { exact: deviceId } : undefined
+                    }
+                };
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
                 if (cameraSection) cameraSection.classList.remove('hidden');
                 showAlert('✅ Camera started! Position your face in the frame.', 'success');

@@ -1,19 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mark Attendance - Face Recognition</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
-        
+
         .container {
             max-width: 900px;
             margin: 0 auto;
@@ -22,9 +27,13 @@
             border-radius: 15px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
         }
-        
-        h1 { color: #667eea; text-align: center; margin-bottom: 10px; }
-        
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
         .time-box {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -33,25 +42,25 @@
             margin: 20px 0;
             text-align: center;
         }
-        
+
         .time-box .clock {
             font-size: 48px;
             font-weight: bold;
             margin: 15px 0;
         }
-        
+
         .time-box .period {
             font-size: 18px;
             opacity: 0.9;
         }
-        
+
         .camera-section {
             background: #000;
             padding: 20px;
             border-radius: 10px;
             margin: 30px 0;
         }
-        
+
         video {
             width: 100%;
             max-width: 640px;
@@ -59,12 +68,12 @@
             margin: 0 auto;
             border-radius: 10px;
         }
-        
+
         .controls {
             text-align: center;
             margin-top: 20px;
         }
-        
+
         .btn {
             padding: 15px 40px;
             border: none;
@@ -74,26 +83,26 @@
             margin: 5px;
             transition: all 0.3s;
         }
-        
+
         .btn-primary {
             background: #667eea;
             color: white;
         }
-        
+
         .btn-success {
             background: #10b981;
             color: white;
         }
-        
+
         .btn:hover {
             transform: translateY(-2px);
         }
-        
+
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
-        
+
         .status {
             text-align: center;
             padding: 20px;
@@ -102,63 +111,63 @@
             font-weight: 600;
             font-size: 18px;
         }
-        
+
         .status-success {
             background: #d1fae5;
             color: #065f46;
             border: 2px solid #10b981;
         }
-        
+
         .status-error {
             background: #fee2e2;
             color: #991b1b;
             border: 2px solid #ef4444;
         }
-        
+
         .status-info {
             background: #dbeafe;
             color: #1e40af;
             border: 2px solid #3b82f6;
         }
-        
+
         .result {
             background: #f9fafb;
             padding: 30px;
             border-radius: 10px;
             text-align: center;
         }
-        
+
         .result h2 {
             color: #667eea;
             font-size: 32px;
             margin: 20px 0;
         }
-        
+
         .result .details {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 15px;
             margin: 20px 0;
         }
-        
+
         .result .detail {
             background: white;
             padding: 15px;
             border-radius: 8px;
         }
-        
+
         .result .detail .label {
             color: #6b7280;
             font-size: 14px;
         }
-        
+
         .result .detail .value {
             color: #333;
             font-size: 20px;
             font-weight: 600;
             margin-top: 5px;
         }
-        
+
         .warning {
             background: #fef3c7;
             border-left: 4px solid #f59e0b;
@@ -166,50 +175,55 @@
             border-radius: 5px;
             margin: 20px 0;
         }
-        
+
         .warning h4 {
             color: #92400e;
             margin-bottom: 10px;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>📸 Face Recognition Attendance</h1>
         <p style="text-align: center; color: #6b7280; margin-bottom: 20px;">
             Show your face to mark attendance automatically
         </p>
-        
+
         <!-- Time Info -->
         <div class="time-box">
             <h2>Current Time</h2>
             <div class="clock" id="clock">00:00:00</div>
             <div class="period" id="period">Loading...</div>
         </div>
-        
+
         <!-- Warning -->
         <div class="warning" id="warning" style="display: none;">
             <h4>⚠️ Attendance Window</h4>
             <p id="warningText"></p>
         </div>
-        
+
         <!-- Status -->
         <div id="status" style="display: none;"></div>
-        
+
         <!-- Result -->
         <div id="result" style="display: none;"></div>
-        
+
         <!-- Camera -->
         <div class="camera-section" id="cameraSection">
+            <div style="margin-bottom: 15px; text-align: center;">
+                <label style="color: white; margin-right: 10px;">Select Camera:</label>
+                <select id="cameraSelect" style="padding: 8px; border-radius: 5px; min-width: 200px;"></select>
+            </div>
             <video id="video" autoplay></video>
             <canvas id="canvas" style="display: none;"></canvas>
-            
+
             <div class="controls">
                 <button class="btn btn-primary" id="startBtn">📷 Start Camera</button>
                 <button class="btn btn-success" id="markBtn" style="display: none;">✅ Mark Attendance</button>
             </div>
         </div>
-        
+
         <!-- Instructions -->
         <div style="background: #f9fafb; padding: 20px; border-radius: 10px;">
             <h4 style="color: #667eea; margin-bottom: 15px;">📋 Instructions:</h4>
@@ -222,12 +236,37 @@
             </ul>
         </div>
     </div>
-    
+
     <script>
         let video = document.getElementById('video');
         let canvas = document.getElementById('canvas');
+        let cameraSelect = document.getElementById('cameraSelect');
         let stream = null;
-        
+
+        async function populateCameras() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+                cameraSelect.innerHTML = '';
+                videoDevices.forEach((device, index) => {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.text = device.label || `Camera ${index + 1}`;
+                    cameraSelect.appendChild(option);
+                });
+
+                if (videoDevices.length === 0) {
+                    cameraSelect.innerHTML = '<option>No camera found</option>';
+                    cameraSelect.disabled = true;
+                }
+            } catch (e) {
+                console.error('Error enumerating devices:', e);
+            }
+        }
+
+        window.addEventListener('load', populateCameras);
+
         // Update clock
         function updateClock() {
             const now = new Date();
@@ -235,13 +274,13 @@
         }
         setInterval(updateClock, 1000);
         updateClock();
-        
+
         // Check time window
         async function checkTimeWindow() {
             try {
                 const response = await fetch('/face-attendance/check-time-window');
                 const result = await response.json();
-                
+
                 if (result.can_mark) {
                     document.getElementById('period').innerHTML = `
                         Period ${result.period}: ${result.subject}<br>
@@ -250,7 +289,7 @@
                     document.getElementById('startBtn').disabled = false;
                     document.getElementById('warning').style.display = 'none';
                 } else {
-                    document.getElementById('period').innerHTML = 
+                    document.getElementById('period').innerHTML =
                         '<span style="background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 5px;">No class in session</span>';
                     document.getElementById('startBtn').disabled = true;
                     document.getElementById('warning').style.display = 'block';
@@ -260,60 +299,66 @@
                 console.error('Error:', error);
             }
         }
-        
+
         checkTimeWindow();
         setInterval(checkTimeWindow, 60000);
-        
+
         // Start Camera
         document.getElementById('startBtn').addEventListener('click', async () => {
             try {
-                stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { width: 640, height: 480 } 
-                });
-                
+                const deviceId = cameraSelect.value;
+                const constraints = {
+                    video: {
+                        width: 640,
+                        height: 480,
+                        deviceId: deviceId ? { exact: deviceId } : undefined
+                    }
+                };
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+
                 video.srcObject = stream;
-                
+
                 document.getElementById('startBtn').style.display = 'none';
                 document.getElementById('markBtn').style.display = 'inline-block';
-                
+
                 showStatus('Camera started! Position your face and click Mark Attendance', 'info');
             } catch (error) {
                 showStatus('Camera access denied: ' + error.message, 'error');
             }
         });
-        
+
         // Mark Attendance
         document.getElementById('markBtn').addEventListener('click', async () => {
             const btn = document.getElementById('markBtn');
             btn.disabled = true;
             btn.textContent = '⏳ Recognizing...';
-            
+
             showStatus('Recognizing your face... Please wait', 'info');
-            
+
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             canvas.getContext('2d').drawImage(video, 0, 0);
-            
+
             const imageData = canvas.toDataURL('image/jpeg', 0.9);
-            
+
             try {
                 const response = await fetch('/face-attendance/recognize-and-mark', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ image: imageData })
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     // Stop camera
                     if (stream) {
                         stream.getTracks().forEach(track => track.stop());
                         video.srcObject = null;
                     }
-                    
+
                     document.getElementById('cameraSection').style.display = 'none';
-                    
+
                     // Show result
                     document.getElementById('result').innerHTML = `
                         <div class="result">
@@ -346,7 +391,7 @@
                         </div>
                     `;
                     document.getElementById('result').style.display = 'block';
-                    
+
                     showStatus('✅ Attendance marked successfully!', 'success');
                 } else {
                     showStatus(result.message, 'error');
@@ -359,13 +404,13 @@
                 btn.textContent = '✅ Mark Attendance';
             }
         });
-        
+
         function showStatus(message, type) {
             const status = document.getElementById('status');
             status.textContent = message;
             status.className = 'status status-' + type;
             status.style.display = 'block';
-            
+
             setTimeout(() => {
                 if (type !== 'success') {
                     status.style.display = 'none';
@@ -374,4 +419,5 @@
         }
     </script>
 </body>
+
 </html>

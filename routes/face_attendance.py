@@ -578,6 +578,10 @@ def mark_attendance_page():
             <video id="video" autoplay playsinline></video>
             <canvas id="canvas" style="display:none;"></canvas>
             <div class="controls">
+                <div style="margin-bottom: 15px;">
+                    <label style="color: white; margin-right: 10px;">Select Camera:</label>
+                    <select id="cameraSelect" style="padding: 8px; border-radius: 5px; min-width: 200px;"></select>
+                </div>
                 <button class="btn btn-success" id="captureBtn" onclick="captureAttendance()">
                     📸 Mark Attendance
                 </button>
@@ -601,14 +605,39 @@ def mark_attendance_page():
     </div>
     
     <script>
-        let video, canvas, stream;
+        let video, canvas, stream, cameraSelect;
         
-        window.addEventListener('load', () => {
+        window.addEventListener('load', async () => {
             video = document.getElementById('video');
             canvas = document.getElementById('canvas');
+            cameraSelect = document.getElementById('cameraSelect');
+            
+            await populateCameras();
             checkStatus();
             setInterval(checkStatus, 10000); // Check every 10 seconds
         });
+
+        async function populateCameras() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                
+                cameraSelect.innerHTML = '';
+                videoDevices.forEach((device, index) => {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.text = device.label || `Camera ${index + 1}`;
+                    cameraSelect.appendChild(option);
+                });
+
+                if (videoDevices.length === 0) {
+                    cameraSelect.innerHTML = '<option>No camera found</option>';
+                    cameraSelect.disabled = true;
+                }
+            } catch (e) {
+                console.error('Error enumerating devices:', e);
+            }
+        }
         
         async function checkStatus() {
             try {
@@ -645,9 +674,15 @@ def mark_attendance_page():
         
         async function startCamera() {
             try {
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: { width: 1280, height: 720, facingMode: 'user' }
-                });
+                const deviceId = cameraSelect.value;
+                const constraints = {
+                    video: { 
+                        width: 1280, 
+                        height: 720,
+                        deviceId: deviceId ? { exact: deviceId } : undefined
+                    }
+                };
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
                 document.getElementById('cameraSection').style.display = 'block';
                 document.getElementById('startBtn').style.display = 'none';

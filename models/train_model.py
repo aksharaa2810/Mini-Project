@@ -424,8 +424,9 @@ def main():
             student_id = input("Enter Student ID: ")
             name = input("Enter Student Name: ")
             num_images = int(input("Number of images to collect (default 5): ") or "5")
+            camera_index = int(input("Enter Camera Index (default 0 for built-in, 1 for external): ") or "0")
             
-            result = trainer.collect_face_data(student_id, name, num_images)
+            result = trainer.collect_face_data(student_id, name, num_images, camera_index=camera_index)
             print(result['message'])
             
         elif choice == '2':

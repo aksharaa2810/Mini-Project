@@ -1,0 +1,65 @@
+SMART ATTENDANCE & BUS PASS SYSTEM
+====================================
+
+A comprehensive automation system for educational institutions to manage student attendance and transportation using AI-powered face recognition and QR code technology.
+
+PROJECT DESCRIPTION
+-------------------
+The Smart Attendance System is a Flask-based enterprise solution designed to eliminate manual attendance marking and streamline bus pass verification. It provides a secure, role-based environment for Admins, Staff, and Students.
+
+Core Modules:
+- Authentication System: Secure login for Students, Staff, and Admins with role-specific dashboards.
+- Face Registration: A 3-step biometric enrollment process capturing Front, Left, and Right profiles.
+- Smart Attendance: Automated class attendance marking using real-time face recognition within class-specific time windows.
+- Dynamic Bus Pass: QR-code-based daily passes with automated entry logging and parent notification.
+- OD & Leave Management: Digital application and approval workflow for "On-Duty" and leave requests.
+- Notifications: Automated Gmail integration for attendance alerts and status updates.
+
+PROJECT WORKFLOW
+----------------
+
+1. Student Onboarding & Registration
+- Admin/Staff Adds Student
+- Student Logs In
+- Access Face Registration
+- Capture 3 Photos: Front, Left, Right
+- System Validates Faces & Creates Biometric ID
+- Registration Complete
+
+2. Daily Attendance Flow
+- Class Start Time
+- System checks if Attendance Window is Open (15 min)
+- Staff/Student Starts Camera
+- System Detects & Recognizes Multiple Faces
+- Attendance is Logged in Database
+- Auto-Email Notification sent to Student/Parent
+
+3. Bus Pass Verification
+- Student Generates Pass on Mobile
+- Unique QR Code is Created
+- Guard Scans QR Code at Bus Entry
+- Page redirects to Identity Verification
+- Guard Confirms Entry
+- Bus Attendance is Logged
+
+MODEL USAGE
+-----------
+The project utilizes a hybrid AI approach, balancing high accuracy with lightweight execution.
+
+1. Face Detection:
+- MTCNN: Primary (High Precision) - Uses Multi-task Cascaded Convolutional Networks for accurate detection and 5-point landmark extraction.
+- Haar Cascades: Lightweight Fallback - OpenCV's pre-trained frontal face classifier for fast, real-time detection.
+
+2. Face Recognition:
+- VGGFace (ResNet50): Feature Extraction - Deep learning model that converts face images into 2048-dimensional embeddings.
+- SVM (Linear Kernel): Classification - Support Vector Machine classifier trained on student embeddings for fast predictions.
+- Template Matching: Optimization - Uses normalized cross-correlation for rapid frame-to-frame tracking.
+
+3. Identity Verification:
+- Tokenization: Uses SHA-256 hashing to generate secure, tamper-proof tokens for QR codes.
+- Database: Uses Pandas for high-performance CSV manipulation and data management.
+
+-------------------
+Pro-Tip: For best recognition results, ensure students register their faces in good lighting as the VGGFace model is sensitive to shadows.
+
+Important: Ensure config.py is configured with a valid Gmail App Password to enable real-time notifications.
