@@ -50,11 +50,47 @@ def _nms(faces, iou_threshold=0.5):
     return [faces[k] for k in sorted(keep)]
 
 
+def _clip_box_xywh(box, img_w, img_h):
+    x, y, w, h = box
+    x = max(0, int(x))
+    y = max(0, int(y))
+    w = max(0, int(w))
+    h = max(0, int(h))
+    if x >= img_w or y >= img_h:
+        return [0, 0, 0, 0]
+    w = min(w, img_w - x)
+    h = min(h, img_h - y)
+    return [x, y, w, h]
+
+
+def _expand_box_xywh(box, img_w, img_h, pad_ratio=0.15):
+    x, y, w, h = box
+    pad_x = int(w * pad_ratio)
+    pad_y = int(h * pad_ratio)
+    x2 = max(0, x - pad_x)
+    y2 = max(0, y - pad_y)
+    w2 = min(img_w - x2, w + 2 * pad_x)
+    h2 = min(img_h - y2, h + 2 * pad_y)
+    return [x2, y2, w2, h2]
+
+
 class FaceDetector:
-    def __init__(self, min_confidence=0.9, min_face_size=20, use_nms=True, nms_iou_threshold=0.5,
-                 mtcnn_kwargs=None):
+    def __init__(
+        self,
+        min_confidence=0.9,
+        min_face_size=20,
+        use_nms=True,
+        nms_iou_threshold=0.5,
+        mtcnn_kwargs=None,
+        mode="hybrid",
+        fallback_to_mtcnn=True,
+        haar_scale_factor=1.1,
+        haar_min_neighbors=5,
+        haar_min_size=(60, 60),
+        haar_pad_ratio=0.15,
+    ):
         """
-        Initialize MTCNN face detector for high-accuracy multiple face detection.
+        Hybrid face detector: Haar Cascade speed + MTCNN accuracy.
 
         Args:
             min_confidence (float): Minimum confidence threshold for detection (0–1).
@@ -64,13 +100,26 @@ class FaceDetector:
             mtcnn_kwargs (dict): Optional kwargs passed to MTCNN.detect_faces() for tuning, e.g.:
                 scale_factor (float): Image pyramid scale (default 0.709; lower = more scales, slower).
                 threshold_pnet, threshold_rnet, threshold_onet (float): Stage thresholds.
+            mode (str): "hybrid" (default), "mtcnn" (full-frame), or "haar" (fast only).
+            fallback_to_mtcnn (bool): If Haar/hybrid yields no faces, run full-frame MTCNN.
+            haar_scale_factor (float): Haar detectMultiScale scaleFactor.
+            haar_min_neighbors (int): Haar detectMultiScale minNeighbors.
+            haar_min_size (tuple[int,int]): Haar minimum detected face size.
+            haar_pad_ratio (float): Padding added around Haar boxes before MTCNN refine.
         """
         self.detector = MTCNN()
+        self.haar = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
         self.min_confidence = min_confidence
         self.min_face_size = min_face_size
         self.use_nms = use_nms
         self.nms_iou_threshold = nms_iou_threshold
         self.mtcnn_kwargs = mtcnn_kwargs or {}
+        self.mode = (mode or "hybrid").lower()
+        self.fallback_to_mtcnn = fallback_to_mtcnn
+        self.haar_scale_factor = haar_scale_factor
+        self.haar_min_neighbors = haar_min_neighbors
+        self.haar_min_size = tuple(haar_min_size) if haar_min_size else (60, 60)
+        self.haar_pad_ratio = haar_pad_ratio
 
     def _filter_and_sort(self, results):
         """Filter by confidence, optionally NMS, and sort by confidence descending."""
@@ -88,9 +137,103 @@ class FaceDetector:
         faces.sort(key=lambda f: f["confidence"], reverse=True)
         return faces
 
+    def _mtcnn_detect_rgb(self, image_rgb):
+        kwargs = {"min_face_size": self.min_face_size, **self.mtcnn_kwargs}
+        try:
+            results = self.detector.detect_faces(image_rgb, **kwargs)
+        except TypeError:
+            # Compatibility with older mtcnn versions that don't accept kwargs
+            results = self.detector.detect_faces(image_rgb)
+        return self._filter_and_sort(results)
+
+    def _haar_detect_bgr(self, image_bgr):
+        if self.haar is None or self.haar.empty():
+            return []
+        gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
+        rects = self.haar.detectMultiScale(
+            gray,
+            self.haar_scale_factor,
+            self.haar_min_neighbors,
+            minSize=self.haar_min_size,
+        )
+        faces = []
+        for (x, y, w, h) in rects:
+            faces.append({"box": [int(x), int(y), int(w), int(h)], "confidence": 1.0, "keypoints": {}})
+        return faces
+
+    def detect_faces_np(self, image_bgr):
+        """
+        Detect faces from a numpy image in BGR format (OpenCV).
+
+        Returns:
+            list: List of face dicts with 'box', 'confidence', 'keypoints'.
+        """
+        if image_bgr is None:
+            return []
+
+        img_h, img_w = image_bgr.shape[:2]
+
+        if self.mode == "haar":
+            faces = self._haar_detect_bgr(image_bgr)
+            if self.use_nms and len(faces) > 1:
+                faces = _nms(faces, self.nms_iou_threshold)
+            return faces
+
+        if self.mode == "mtcnn":
+            image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+            faces = self._mtcnn_detect_rgb(image_rgb)
+            return faces
+
+        # HYBRID: Haar proposals -> MTCNN refine (crop-level) -> NMS -> fallback full-frame MTCNN
+        haar_faces = self._haar_detect_bgr(image_bgr)
+        refined = []
+
+        if haar_faces:
+            for hf in haar_faces:
+                box = _clip_box_xywh(hf["box"], img_w, img_h)
+                if box[2] <= 0 or box[3] <= 0:
+                    continue
+
+                box = _expand_box_xywh(box, img_w, img_h, self.haar_pad_ratio)
+                x, y, w, h = box
+                crop_bgr = image_bgr[y:y + h, x:x + w]
+                if crop_bgr.size == 0:
+                    continue
+
+                crop_rgb = cv2.cvtColor(crop_bgr, cv2.COLOR_BGR2RGB)
+                crop_faces = self._mtcnn_detect_rgb(crop_rgb)
+                if not crop_faces:
+                    continue
+
+                # Keep best face inside this crop (usually one person)
+                best = crop_faces[0]
+                bx, by, bw, bh = best["box"]
+                mapped = {
+                    "box": _clip_box_xywh([x + bx, y + by, bw, bh], img_w, img_h),
+                    "confidence": best.get("confidence", 0),
+                    "keypoints": {},
+                }
+                if best.get("keypoints"):
+                    mapped["keypoints"] = {
+                        k: (int(v[0] + x), int(v[1] + y)) for k, v in best["keypoints"].items()
+                    }
+                refined.append(mapped)
+
+        if refined:
+            if self.use_nms and len(refined) > 1:
+                refined = _nms(refined, self.nms_iou_threshold)
+            refined.sort(key=lambda f: f["confidence"], reverse=True)
+            return refined
+
+        if self.fallback_to_mtcnn:
+            image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+            return self._mtcnn_detect_rgb(image_rgb)
+
+        return []
+
     def detect_faces(self, image_path):
         """
-        Detect all faces in an image file using MTCNN (multiple faces, high accuracy).
+        Detect all faces in an image file (hybrid by default).
 
         Args:
             image_path (str): Path to image file.
@@ -102,16 +245,8 @@ class FaceDetector:
             image = cv2.imread(image_path)
             if image is None:
                 return []
-
-            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            kwargs = {"min_face_size": self.min_face_size, **self.mtcnn_kwargs}
-            try:
-                results = self.detector.detect_faces(image_rgb, **kwargs)
-            except TypeError:
-                results = self.detector.detect_faces(image_rgb)
-
-            faces = self._filter_and_sort(results)
-            print(f"Detected {len(faces)} face(s) using MTCNN")
+            faces = self.detect_faces_np(image)
+            print(f"Detected {len(faces)} face(s) using {self.mode.upper()}")
             return faces
 
         except Exception as e:
@@ -134,15 +269,9 @@ class FaceDetector:
 
             image_data = base64.b64decode(base64_string)
             image = Image.open(BytesIO(image_data))
-            image_np = np.array(image.convert("RGB"))
-
-            kwargs = {"min_face_size": self.min_face_size, **self.mtcnn_kwargs}
-            try:
-                results = self.detector.detect_faces(image_np, **kwargs)
-            except TypeError:
-                results = self.detector.detect_faces(image_np)
-
-            return self._filter_and_sort(results)
+            image_rgb = np.array(image.convert("RGB"))
+            image_bgr = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR)
+            return self.detect_faces_np(image_bgr)
 
         except Exception as e:
             print(f"Error detecting faces from base64: {str(e)}")

@@ -9,6 +9,8 @@ from io import BytesIO
 from PIL import Image
 import traceback
 
+from models.face_detection import FaceDetector
+
 bp = Blueprint('face_attendance', __name__, url_prefix='/face-attendance')
 
 # ==================== CONFIGURATION ====================
@@ -17,6 +19,14 @@ MAX_IMAGE_SIZE = 10 * 1024 * 1024
 ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png'}
 FACE_SIZE = (200, 200)
 ATTENDANCE_WINDOW_MINUTES = 15  # Changed to 15 minutes for better testing
+
+# Hybrid detector: Haar speed + MTCNN accuracy
+_FACE_DETECTOR = FaceDetector(
+    mode="hybrid",
+    min_confidence=0.85,
+    min_face_size=20,
+    haar_min_size=(60, 60),
+)
 
 # ==================== CLASS SCHEDULE ====================
 CLASS_SCHEDULE = {
@@ -268,23 +278,32 @@ def validate_image(image_data):
 def detect_faces(image_np):
     """Detect faces in an image and return them as a list of cropped face images"""
     try:
-        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-        gray = cv2.cvtColor(image_np, cv2.COLOR_BGR2GRAY)
-        faces = face_cascade.detectMultiScale(gray, 1.1, 5, minSize=(60, 60))
-        
+        faces = _FACE_DETECTOR.detect_faces_np(image_np)
+
         cropped_faces = []
-        for (x, y, w, h) in faces:
-            # Add some padding
-            padding = 0
-            x = max(0, x - padding)
-            y = max(0, y - padding)
-            w = min(image_np.shape[1] - x, w + 2*padding)
-            h = min(image_np.shape[0] - y, h + 2*padding)
-            
-            face_img = image_np[y:y+h, x:x+w]
+        rects = []
+
+        img_h, img_w = image_np.shape[:2]
+        for f in faces:
+            x, y, w, h = f["box"]
+
+            x = max(0, int(x))
+            y = max(0, int(y))
+            w = max(0, int(w))
+            h = max(0, int(h))
+            if w <= 0 or h <= 0:
+                continue
+
+            w = min(w, img_w - x)
+            h = min(h, img_h - y)
+            face_img = image_np[y:y + h, x:x + w]
+            if face_img.size == 0:
+                continue
+
             cropped_faces.append(face_img)
-            
-        return cropped_faces, faces # Return rects too if needed for drawing
+            rects.append((x, y, w, h))
+
+        return cropped_faces, rects  # faces as rects for legacy callers
     except Exception as e:
         print(f"Error in face detection: {e}")
         return [], []
