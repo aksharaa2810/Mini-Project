@@ -32,11 +32,11 @@ class FaceRecognizer:
             pooling='avg'
         )
         
-        # Initialize SVM classifier
+        # Initialize SVM classifier (will be re-created in train if needed)
         self.classifier = SVC(
             kernel='linear',
             probability=True,
-            C=1.0
+            C=10.0  # stricter margin -> higher-confidence decisions on clean data
         )
         
         # Label encoder
@@ -73,8 +73,14 @@ class FaceRecognizer:
             
             # Extract features
             features = self.feature_extractor.predict(face_preprocessed)
+            features = features.flatten()
+
+            # L2-normalize embedding – critical for stable, high-confidence SVM training
+            norm = np.linalg.norm(features)
+            if norm > 0:
+                features = features / norm
             
-            return features.flatten()
+            return features
             
         except Exception as e:
             print(f"Error extracting features: {str(e)}")
@@ -146,7 +152,7 @@ class FaceRecognizer:
                 'message': str(e)
             }
     
-    def recognize(self, face_image, threshold=0.6):
+    def recognize(self, face_image, threshold=0.8):
         """
         Recognize face in image
         
@@ -205,7 +211,7 @@ class FaceRecognizer:
                 'message': str(e)
             }
     
-    def recognize_from_image_path(self, image_path, threshold=0.6):
+    def recognize_from_image_path(self, image_path, threshold=0.8):
         """
         Recognize face from image file
         
