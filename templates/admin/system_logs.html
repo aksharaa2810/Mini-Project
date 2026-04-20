@@ -1,0 +1,567 @@
+{% extends "base.html" %}
+
+{% block title %}System Logs{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<style>
+    .log-container {
+        background: #1e1e1e;
+        color: #d4d4d4;
+        padding: 20px;
+        border-radius: 10px;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        max-height: 600px;
+        overflow-y: auto;
+    }
+    
+    .log-line {
+        padding: 5px 0;
+        border-bottom: 1px solid #333;
+    }
+    
+    .log-line:hover {
+        background: #2a2a2a;
+    }
+    
+    .log-timestamp {
+        color: #858585;
+        margin-right: 10px;
+    }
+    
+    .log-level {
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-weight: bold;
+        margin-right: 10px;
+        font-size: 12px;
+    }
+    
+    .log-level-info {
+        background: #0ea5e9;
+        color: white;
+    }
+    
+    .log-level-success {
+        background: #10b981;
+        color: white;
+    }
+    
+    .log-level-warning {
+        background: #f59e0b;
+        color: white;
+    }
+    
+    .log-level-error {
+        background: #ef4444;
+        color: white;
+    }
+    
+    .log-level-debug {
+        background: #8b5cf6;
+        color: white;
+    }
+    
+    .log-message {
+        color: #d4d4d4;
+    }
+    
+    .filter-badge {
+        display: inline-block;
+        padding: 5px 15px;
+        border-radius: 20px;
+        cursor: pointer;
+        margin: 5px;
+        font-size: 14px;
+        transition: all 0.3s;
+    }
+    
+    .filter-badge:hover {
+        transform: scale(1.05);
+    }
+    
+    .filter-badge.active {
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container admin-dashboard">
+    
+    <div class="card">
+        <h1 class="card-title">System Logs</h1>
+        <p style="color: #6b7280;">Monitor system activity and events in real-time</p>
+    </div>
+    
+    <!-- Log Statistics -->
+    <div class="grid grid-5" style="margin-top: 30px;">
+        <div class="card" style="text-align: center; padding: 20px; background: #dbeafe;">
+            <h3 style="font-size: 32px; color: #1e40af; margin-bottom: 5px;">{{ log_stats.info }}</h3>
+            <p style="color: #1e40af; font-weight: 600;">INFO</p>
+        </div>
+        
+        <div class="card" style="text-align: center; padding: 20px; background: #d1fae5;">
+            <h3 style="font-size: 32px; color: #065f46; margin-bottom: 5px;">{{ log_stats.success }}</h3>
+            <p style="color: #065f46; font-weight: 600;">SUCCESS</p>
+        </div>
+        
+        <div class="card" style="text-align: center; padding: 20px; background: #fef3c7;">
+            <h3 style="font-size: 32px; color: #92400e; margin-bottom: 5px;">{{ log_stats.warning }}</h3>
+            <p style="color: #92400e; font-weight: 600;">WARNING</p>
+        </div>
+        
+        <div class="card" style="text-align: center; padding: 20px; background: #fee2e2;">
+            <h3 style="font-size: 32px; color: #991b1b; margin-bottom: 5px;">{{ log_stats.error }}</h3>
+            <p style="color: #991b1b; font-weight: 600;">ERROR</p>
+        </div>
+        
+        <div class="card" style="text-align: center; padding: 20px; background: #ede9fe;">
+            <h3 style="font-size: 32px; color: #5b21b6; margin-bottom: 5px;">{{ log_stats.debug }}</h3>
+            <p style="color: #5b21b6; font-weight: 600;">DEBUG</p>
+        </div>
+    </div>
+    
+    <!-- Filters and Controls -->
+    <div class="card" style="margin-top: 30px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+            
+            <!-- Log Level Filters -->
+            <div>
+                <label style="font-weight: 600; margin-bottom: 10px; display: block;">Filter by Level:</label>
+                <div>
+                    <span class="filter-badge active" 
+                          style="background: #6b7280; color: white;" 
+                          onclick="filterLogs('all')">
+                        All
+                    </span>
+                    <span class="filter-badge" 
+                          style="background: #0ea5e9; color: white;" 
+                          onclick="filterLogs('info')">
+                        Info
+                    </span>
+                    <span class="filter-badge" 
+                          style="background: #10b981; color: white;" 
+                          onclick="filterLogs('success')">
+                        Success
+                    </span>
+                    <span class="filter-badge" 
+                          style="background: #f59e0b; color: white;" 
+                          onclick="filterLogs('warning')">
+                        Warning
+                    </span>
+                    <span class="filter-badge" 
+                          style="background: #ef4444; color: white;" 
+                          onclick="filterLogs('error')">
+                        Error
+                    </span>
+                    <span class="filter-badge" 
+                          style="background: #8b5cf6; color: white;" 
+                          onclick="filterLogs('debug')">
+                        Debug
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Time Range -->
+            <div>
+                <label style="font-weight: 600; margin-bottom: 10px; display: block;">Time Range:</label>
+                <select id="timeRange" class="form-control" onchange="changeTimeRange()" style="width: 200px;">
+                    <option value="1">Last 1 hour</option>
+                    <option value="6">Last 6 hours</option>
+                    <option value="24" selected>Last 24 hours</option>
+                    <option value="168">Last 7 days</option>
+                    <option value="720">Last 30 days</option>
+                </select>
+            </div>
+            
+            <!-- Search -->
+            <div style="flex: 1; min-width: 300px;">
+                <label style="font-weight: 600; margin-bottom: 10px; display: block;">Search Logs:</label>
+                <input type="text" 
+                       id="logSearch" 
+                       class="form-control" 
+                       placeholder="🔍 Search by message, user, or action..."
+                       onkeyup="searchLogs()">
+            </div>
+            
+        </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div style="display: flex; gap: 15px; margin-top: 20px; justify-content: flex-end;">
+        <button onclick="refreshLogs()" class="btn btn-primary">
+            🔄 Refresh
+        </button>
+        <button onclick="exportLogs()" class="btn btn-secondary">
+            📥 Export Logs
+        </button>
+        <button onclick="clearLogs()" class="btn btn-danger">
+            🗑️ Clear Old Logs
+        </button>
+        <button onclick="toggleAutoRefresh()" class="btn btn-secondary" id="autoRefreshBtn">
+            ⏸️ Pause Auto-Refresh
+        </button>
+    </div>
+    
+    <!-- Live Log Display -->
+    <div class="card" style="margin-top: 30px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 class="card-title" style="margin: 0;">Live System Logs</h2>
+            <span id="logCount" style="color: #6b7280; font-size: 14px;">
+                Showing {{ logs|length }} logs
+            </span>
+        </div>
+        
+        <div class="log-container" id="logContainer">
+            {% if logs %}
+                {% for log in logs %}
+                <div class="log-line" data-level="{{ log.level }}">
+                    <span class="log-timestamp">{{ log.timestamp }}</span>
+                    <span class="log-level log-level-{{ log.level }}">{{ log.level|upper }}</span>
+                    <span class="log-message">{{ log.message }}</span>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div style="text-align: center; padding: 40px; color: #858585;">
+                    <p>No logs available</p>
+                    <p style="font-size: 12px;">System logs will appear here in real-time</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Log Details Modal -->
+    <div class="card" style="margin-top: 30px;">
+        <h2 class="card-title">Recent Critical Events</h2>
+        
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Level</th>
+                    <th>Event Type</th>
+                    <th>User</th>
+                    <th>Description</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if critical_logs %}
+                    {% for log in critical_logs %}
+                    <tr>
+                        <td>{{ log.timestamp }}</td>
+                        <td>
+                            <span class="badge badge-{{ 'danger' if log.level == 'error' else 'warning' }}">
+                                {{ log.level|upper }}
+                            </span>
+                        </td>
+                        <td>{{ log.event_type }}</td>
+                        <td>{{ log.user or 'System' }}</td>
+                        <td>{{ log.description[:50] }}{% if log.description|length > 50 %}...{% endif %}</td>
+                        <td>
+                            <button class="btn btn-secondary" 
+                                    style="padding: 5px 15px; font-size: 14px;"
+                                    onclick="viewLogDetails('{{ log.id }}')">
+                                View
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #6b7280;">
+                            No critical events in the selected time range
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- System Activity Chart -->
+    <div class="card" style="margin-top: 30px;">
+        <h2 class="card-title">System Activity (Last 24 Hours)</h2>
+        <canvas id="activityChart" style="max-height: 300px;"></canvas>
+    </div>
+    
+    <!-- Log Categories -->
+    <div class="grid grid-3" style="margin-top: 30px;">
+        <div class="card">
+            <h3 style="color: #667eea; margin-bottom: 15px;">👤 User Activity</h3>
+            <div style="color: #6b7280; line-height: 2;">
+                <p>Logins: {{ activity_stats.logins }}</p>
+                <p>Logouts: {{ activity_stats.logouts }}</p>
+                <p>Failed Attempts: {{ activity_stats.failed_logins }}</p>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3 style="color: #667eea; margin-bottom: 15px;">📊 Attendance Events</h3>
+            <div style="color: #6b7280; line-height: 2;">
+                <p>Marked: {{ activity_stats.attendance_marked }}</p>
+                <p>Modified: {{ activity_stats.attendance_modified }}</p>
+                <p>OD Approved: {{ activity_stats.od_approved }}</p>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3 style="color: #667eea; margin-bottom: 15px;">⚙️ System Events</h3>
+            <div style="color: #6b7280; line-height: 2;">
+                <p>Database Queries: {{ activity_stats.db_queries }}</p>
+                <p>API Calls: {{ activity_stats.api_calls }}</p>
+                <p>Errors: {{ activity_stats.errors }}</p>
+            </div>
+        </div>
+    </div>
+    
+</div>
+
+<!-- Log Detail Modal -->
+<div class="modal" id="logDetailModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Log Details</h2>
+            <button class="modal-close" onclick="closeModal('logDetailModal')">&times;</button>
+        </div>
+        <div id="logDetailContent" style="padding: 20px;">
+            <!-- Content loaded dynamically -->
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+<script>
+    let autoRefreshInterval;
+    let isAutoRefreshActive = true;
+    
+    // Initialize auto-refresh
+    startAutoRefresh();
+    
+    function startAutoRefresh() {
+        autoRefreshInterval = setInterval(function() {
+            if (isAutoRefreshActive) {
+                refreshLogs();
+            }
+        }, 10000); // Refresh every 10 seconds
+    }
+    
+    function toggleAutoRefresh() {
+        isAutoRefreshActive = !isAutoRefreshActive;
+        const btn = document.getElementById('autoRefreshBtn');
+        
+        if (isAutoRefreshActive) {
+            btn.textContent = '⏸️ Pause Auto-Refresh';
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-secondary');
+        } else {
+            btn.textContent = '▶️ Resume Auto-Refresh';
+            btn.classList.remove('btn-secondary');
+            btn.classList.add('btn-success');
+        }
+    }
+    
+    function refreshLogs() {
+        const timeRange = document.getElementById('timeRange').value;
+        
+        fetch(`/admin/get-logs?hours=${timeRange}`)
+            .then(response => response.json())
+            .then(data => {
+                updateLogDisplay(data.logs);
+                window.appUtils.showNotification('Logs refreshed', 'success');
+            })
+            .catch(error => {
+                console.error('Error refreshing logs:', error);
+            });
+    }
+    
+    function updateLogDisplay(logs) {
+        const container = document.getElementById('logContainer');
+        container.innerHTML = '';
+        
+        if (logs.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #858585;">
+                    <p>No logs available</p>
+                </div>
+            `;
+            return;
+        }
+        
+        logs.forEach(log => {
+            const logLine = document.createElement('div');
+            logLine.className = 'log-line';
+            logLine.setAttribute('data-level', log.level);
+            logLine.innerHTML = `
+                <span class="log-timestamp">${log.timestamp}</span>
+                <span class="log-level log-level-${log.level}">${log.level.toUpperCase()}</span>
+                <span class="log-message">${log.message}</span>
+            `;
+            container.appendChild(logLine);
+        });
+        
+        // Scroll to bottom
+        container.scrollTop = container.scrollHeight;
+        
+        // Update count
+        document.getElementById('logCount').textContent = `Showing ${logs.length} logs`;
+    }
+    
+    function filterLogs(level) {
+        const logLines = document.querySelectorAll('.log-line');
+        const badges = document.querySelectorAll('.filter-badge');
+        
+        // Update active badge
+        badges.forEach(badge => badge.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        // Filter logs
+        logLines.forEach(line => {
+            if (level === 'all' || line.getAttribute('data-level') === level) {
+                line.style.display = 'block';
+            } else {
+                line.style.display = 'none';
+            }
+        });
+        
+        // Update count
+        const visibleLogs = document.querySelectorAll('.log-line[style="display: block;"]').length;
+        document.getElementById('logCount').textContent = `Showing ${visibleLogs} logs`;
+    }
+    
+    function searchLogs() {
+        const searchTerm = document.getElementById('logSearch').value.toLowerCase();
+        const logLines = document.querySelectorAll('.log-line');
+        
+        let visibleCount = 0;
+        
+        logLines.forEach(line => {
+            const message = line.querySelector('.log-message').textContent.toLowerCase();
+            if (message.includes(searchTerm)) {
+                line.style.display = 'block';
+                visibleCount++;
+            } else {
+                line.style.display = 'none';
+            }
+        });
+        
+        document.getElementById('logCount').textContent = `Showing ${visibleCount} logs`;
+    }
+    
+    function changeTimeRange() {
+        refreshLogs();
+    }
+    
+    function exportLogs() {
+        const timeRange = document.getElementById('timeRange').value;
+        window.location.href = `/admin/export-logs?hours=${timeRange}`;
+        window.appUtils.showNotification('Exporting logs...', 'info');
+    }
+    
+    function clearLogs() {
+        if (confirm('Are you sure you want to clear old logs? This action cannot be undone.')) {
+            fetch('/admin/clear-logs', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.appUtils.showNotification(`Cleared ${data.deleted} old logs`, 'success');
+                    refreshLogs();
+                } else {
+                    window.appUtils.showNotification('Failed to clear logs', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                window.appUtils.showNotification('Network error', 'error');
+            });
+        }
+    }
+    
+    function viewLogDetails(logId) {
+        window.appUtils.openModal('logDetailModal');
+        
+        document.getElementById('logDetailContent').innerHTML = `
+            <div class="spinner"></div>
+            <p style="text-align: center;">Loading details...</p>
+        `;
+        
+        fetch(`/admin/log-details/${logId}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('logDetailContent').innerHTML = `
+                    <div style="line-height: 2;">
+                        <p><strong>Timestamp:</strong> ${data.timestamp}</p>
+                        <p><strong>Level:</strong> <span class="badge badge-${data.level}">${data.level.toUpperCase()}</span></p>
+                        <p><strong>Event Type:</strong> ${data.event_type}</p>
+                        <p><strong>User:</strong> ${data.user || 'System'}</p>
+                        <p><strong>IP Address:</strong> ${data.ip_address || 'N/A'}</p>
+                        <hr>
+                        <p><strong>Description:</strong></p>
+                        <p style="padding: 15px; background: #f9fafb; border-radius: 5px;">${data.description}</p>
+                        ${data.stack_trace ? `
+                            <p style="margin-top: 20px;"><strong>Stack Trace:</strong></p>
+                            <pre style="padding: 15px; background: #1e1e1e; color: #d4d4d4; border-radius: 5px; overflow-x: auto;">${data.stack_trace}</pre>
+                        ` : ''}
+                    </div>
+                `;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('logDetailContent').innerHTML = `
+                    <p style="color: #ef4444; text-align: center;">Failed to load log details</p>
+                `;
+            });
+    }
+    
+    // Activity Chart
+    const activityCtx = document.getElementById('activityChart').getContext('2d');
+    const activityChart = new Chart(activityCtx, {
+        type: 'line',
+        data: {
+            labels: {{ chart_labels|tojson }},
+            datasets: [
+                {
+                    label: 'Info',
+                    data: {{ chart_data.info|tojson }},
+                    borderColor: '#0ea5e9',
+                    backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                    tension: 0.4
+                },
+                {
+                    label: 'Warnings',
+                    data: {{ chart_data.warning|tojson }},
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    tension: 0.4
+                },
+                {
+                    label: 'Errors',
+                    data: {{ chart_data.error|tojson }},
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    tension: 0.4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

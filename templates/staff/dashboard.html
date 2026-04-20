@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Staff Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container admin-dashboard">
+    
+    <!-- Header -->
+    <div class="admin-header">
+        <h1>Staff Dashboard</h1>
+        <p>Welcome, {{ name }}! | Staff ID: {{ session.user_id }} | Department: {{ session.department }}</p>
+        <p>📅 {{ current_date }}</p>
+    </div>
+    
+    <!-- Statistics -->
+    <div class="stats-grid">
+        <div class="stat-box students">
+            <div class="icon">👥</div>
+            <div class="info">
+                <h3>{{ total_students }}</h3>
+                <p>Total Students</p>
+            </div>
+        </div>
+        
+        <div class="stat-box attendance">
+            <div class="icon">✅</div>
+            <div class="info">
+                <h3>{{ today_attendance }}%</h3>
+                <p>Today's Attendance</p>
+            </div>
+        </div>
+        
+        <div class="stat-box od-requests">
+            <div class="icon">📋</div>
+            <div class="info">
+                <h3>{{ pending_ods }}</h3>
+                <p>Pending OD Requests</p>
+            </div>
+        </div>
+        
+        <div class="stat-box" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <div class="icon">📊</div>
+            <div class="info">
+                <h3>{{ classes_today }}</h3>
+                <p>Classes Today</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <h2 style="color: white; margin: 40px 0 20px;">Quick Actions</h2>
+    <div class="grid grid-4">
+        <!-- Face Attendance Link - PRIMARY ACTION -->
+        <a href="/face-attendance/mark" class="action-card" style="border: 3px solid #667eea;">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 28px; color: white;">
+                📸
+            </div>
+            <h3 style="font-size: 18px; margin-bottom: 10px; color: #333;">Face Attendance</h3>
+            <p style="font-size: 14px; color: #6b7280;">Mark attendance using face recognition</p>
+            <span style="display: inline-block; margin-top: 10px; padding: 5px 15px; background: #667eea; color: white; border-radius: 20px; font-size: 12px; font-weight: bold;">RECOMMENDED</span>
+        </a>
+        
+        <a href="{{ url_for('staff.view_attendance') }}" class="action-card">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 28px; color: white;">
+                📊
+            </div>
+            <h3 style="font-size: 18px; margin-bottom: 10px; color: #333;">View Attendance</h3>
+            <p style="font-size: 14px; color: #6b7280;">Check class attendance</p>
+        </a>
+        
+        <a href="{{ url_for('staff.od_approval') }}" class="action-card">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 28px; color: white;">
+                ✅
+            </div>
+            <h3 style="font-size: 18px; margin-bottom: 10px; color: #333;">Approve OD</h3>
+            <p style="font-size: 14px; color: #6b7280;">Review OD requests</p>
+            {% if pending_ods > 0 %}
+            <span style="display: inline-block; margin-top: 10px; padding: 5px 10px; background: #ef4444; color: white; border-radius: 50%; font-size: 12px; font-weight: bold;">{{ pending_ods }}</span>
+            {% endif %}
+        </a>
+        
+        <a href="{{ url_for('staff.reports') }}" class="action-card">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 28px; color: white;">
+                📈
+            </div>
+            <h3 style="font-size: 18px; margin-bottom: 10px; color: #333;">Reports</h3>
+            <p style="font-size: 14px; color: #6b7280;">Generate reports</p>
+        </a>
+    </div>
+    
+    <!-- Department Info Card -->
+    <div class="card" style="margin-top: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+        <h2 style="color: white; margin-bottom: 15px;">📚 Your Department: {{ session.department }}</h2>
+        <p style="font-size: 16px; opacity: 0.9;">You can view and manage attendance for students in the <strong>{{ session.department }}</strong> department.</p>
+        <p style="font-size: 14px; margin-top: 10px; opacity: 0.8;">Use the Face Attendance system above to mark attendance quickly and accurately.</p>
+    </div>
+    
+    <!-- Pending OD Approvals -->
+    {% if pending_od_list %}
+    <div class="card" style="margin-top: 40px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 class="card-title" style="margin: 0;">Pending OD Approvals ({{ session.department }})</h2>
+            <a href="{{ url_for('staff.od_approval') }}" class="btn btn-primary">View All</a>
+        </div>
+        
+        {% for od in pending_od_list %}
+        <div style="padding: 15px; border: 2px solid #e5e7eb; border-radius: 5px; margin-bottom: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div>
+                    <h4 style="color: #333; margin-bottom: 5px;">{{ od.student_name }} ({{ od.student_id }})</h4>
+                    <p style="color: #6b7280; font-size: 14px; margin-bottom: 5px;">
+                        <strong>Date:</strong> {{ od.date }} | <strong>Time:</strong> {{ od.start_time }} - {{ od.end_time }}
+                    </p>
+                    <p style="color: #6b7280; font-size: 14px;">
+                        <strong>Reason:</strong> {{ od.reason[:100] }}{% if od.reason|length > 100 %}...{% endif %}
+                    </p>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-success" 
+                            style="padding: 5px 15px; font-size: 14px;"
+                            onclick="approveOD('{{ od.request_id }}')">
+                        Approve
+                    </button>
+                    <button class="btn btn-danger" 
+                            style="padding: 5px 15px; font-size: 14px;"
+                            onclick="rejectOD('{{ od.request_id }}')">
+                        Reject
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <!-- Quick Stats -->
+    <div class="card" style="margin-top: 40px;">
+        <h2 class="card-title">Quick Statistics</h2>
+        
+        <div class="grid grid-3">
+            <div style="padding: 20px; background: #f9fafb; border-radius: 10px; text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📸</div>
+                <h3 style="color: #667eea; font-size: 24px; margin-bottom: 5px;">Face Recognition</h3>
+                <p style="color: #6b7280; font-size: 14px;">Use our advanced face recognition system to mark attendance quickly and accurately.</p>
+                <a href="/face-attendance/mark" class="btn btn-primary" style="margin-top: 15px; display: inline-block;">
+                    Start Now
+                </a>
+            </div>
+            
+            <div style="padding: 20px; background: #f9fafb; border-radius: 10px; text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">📊</div>
+                <h3 style="color: #667eea; font-size: 24px; margin-bottom: 5px;">{{ today_attendance }}%</h3>
+                <p style="color: #6b7280; font-size: 14px;">Today's Attendance Rate</p>
+            </div>
+            
+            <div style="padding: 20px; background: #f9fafb; border-radius: 10px; text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">👥</div>
+                <h3 style="color: #667eea; font-size: 24px; margin-bottom: 5px;">{{ total_students }}</h3>
+                <p style="color: #6b7280; font-size: 14px;">Students in Your Department</p>
+            </div>
+        </div>
+    </div>
+    
+</div>
+
+<script>
+    function approveOD(requestId) {
+        if (confirm('Are you sure you want to approve this OD request?')) {
+            fetch(`/staff/od-approve/${requestId}`, {
+                method: 'POST'
+            }).then(response => {
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Failed to approve OD request');
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+                alert('Network error');
+            });
+        }
+    }
+    
+    function rejectOD(requestId) {
+        const remarks = prompt('Enter reason for rejection (required):');
+        
+        if (remarks === null) {
+            return;
+        }
+        
+        if (!remarks.trim()) {
+            alert('Please provide a reason for rejection');
+            return;
+        }
+        
+        if (confirm('Are you sure you want to reject this OD request?')) {
+            const formData = new FormData();
+            formData.append('remarks', remarks);
+            
+            fetch(`/staff/od-reject/${requestId}`, {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Failed to reject OD request');
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+                alert('Network error');
+            });
+        }
+    }
+</script>
+
+<style>
+    .action-card {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        text-align: center;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+        position: relative;
+    }
+    
+    .action-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    }
+</style>
+{% endblock %}

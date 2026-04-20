@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+
+{% block title %}OD Approval{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container admin-dashboard">
+    
+    <div class="card">
+        <h1 class="card-title">On-Duty (OD) Approval</h1>
+        
+        <!-- Tabs -->
+        <div style="display: flex; gap: 15px; margin-bottom: 30px; border-bottom: 2px solid #e5e7eb;">
+            <button class="tab-btn {{ 'active' if status == 'pending' else '' }}" 
+                    onclick="window.location.href='{{ url_for('staff.od_approval', status='pending') }}'">
+                Pending ({{ pending_count }})
+            </button>
+            <button class="tab-btn {{ 'active' if status == 'approved' else '' }}" 
+                    onclick="window.location.href='{{ url_for('staff.od_approval', status='approved') }}'">
+                Approved
+            </button>
+            <button class="tab-btn {{ 'active' if status == 'rejected' else '' }}" 
+                    onclick="window.location.href='{{ url_for('staff.od_approval', status='rejected') }}'">
+                Rejected
+            </button>
+        </div>
+        
+        <!-- Search and Filter -->
+        <div class="grid grid-3" style="margin-bottom: 30px;">
+            <div class="form-group">
+                <input type="text" 
+                       id="searchInput" 
+                       class="form-control" 
+                       placeholder="🔍 Search by student ID or name..."
+                       onkeyup="searchTable('searchInput', 'odTable')">
+            </div>
+            
+            <div class="form-group">
+                <select id="classFilter" class="form-control" onchange="filterODs()">
+                    <option value="">All Classes</option>
+                    <option value="CSE-A">CSE-A</option>
+                    <option value="CSE-B">CSE-B</option>
+                    <option value="ECE-A">ECE-A</option>
+                    <option value="MECH-A">MECH-A</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <input type="date" id="dateFilter" class="form-control" onchange="filterODs()">
+            </div>
+        </div>
+        
+        <!-- OD Requests Table -->
+        <div style="overflow-x: auto;">
+            <table class="table" id="odTable">
+                <thead>
+                    <tr>
+                        <th>Request ID</th>
+                        <th>Student ID</th>
+                        <th>Name</th>
+                        <th>Class</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Type</th>
+                        <th>Submitted</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if requests %}
+                        {% for req in requests %}
+                        <tr>
+                            <td>{{ req.request_id }}</td>
+                            <td>{{ req.student_id }}</td>
+                            <td>{{ req.student_name }}</td>
+                            <td>{{ req.class }}</td>
+                            <td>{{ req.date }}</td>
+                            <td>{{ req.start_time }} - {{ req.end_time }}</td>
+                            <td>
+                                <span class="badge badge-info">{{ req.od_type }}</span>
+                            </td>
+                            <td>{{ req.submitted_at }}</td>
+                            <td>
+                                <button class="btn btn-primary" 
+                                        style="padding: 5px 15px; font-size: 14px;"
+                                        onclick="viewODDetails('{{ req.request_id }}')">
+                                    View
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="9" style="text-align: center; color: #6b7280; padding: 40px;">
+                                <p style="font-size: 18px; margin-bottom: 10px;">📋 No {{ status }} OD requests</p>
+                                <p style="font-size: 14px; color: #9ca3af;">
+                                    {% if status == 'pending' %}
+                                        There are no pending OD requests at the moment.
+                                    {% elif status == 'approved' %}
+                                        No OD requests have been approved yet.
+                                    {% else %}
+                                        No OD requests have been rejected yet.
+                                    {% endif %}
+                                </p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        
+    </div>
+    
+</div>
+
+<!-- OD Details Modal -->
+<div class="modal" id="odDetailsModal">
+    <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header">
+            <h2>OD Request Details</h2>
+            <button class="modal-close" onclick="closeModal('odDetailsModal')">&times;</button>
+        </div>
+        <div id="odDetailsContent" style="padding: 20px;">
+            <!-- Content loaded dynamically -->
+        </div>
+    </div>
+</div>
+
+<style>
+    .tab-btn {
+        padding: 10px 20px;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        color: #6b7280;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+    
+    .tab-btn.active {
+        color: #667eea;
+        border-bottom-color: #667eea;
+    }
+    
+    .tab-btn:hover {
+        color: #667eea;
+    }
+    
+    .spinner {
+        border: 4px solid #f3f4f6;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+
+<script>
+    function searchTable(inputId, tableId) {
+        if (window.appUtils && window.appUtils.searchTable) {
+            window.appUtils.searchTable(inputId, tableId);
+        } else {
+            // Fallback search implementation
+            const input = document.getElementById(inputId);
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById(tableId);
+            const rows = table.getElementsByTagName('tr');
+            
+            for (let i = 1; i < rows.length; i++) {
+                const cells = rows[i].getElementsByTagName('td');
+                let found = false;
+                
+                for (let j = 0; j < cells.length; j++) {
+                    if (cells[j].textContent.toUpperCase().indexOf(filter) > -1) {
+                        found = true;
+                        break;
+                    }
+                }
+                
+                rows[i].style.display = found ? '' : 'none';
+            }
+        }
+    }
+    
+    function filterODs() {
+        const classFilter = document.getElementById('classFilter').value;
+        const dateFilter = document.getElementById('dateFilter').value;
+        
+        const params = new URLSearchParams(window.location.search);
+        const currentStatus = params.get('status') || 'pending';
+        
+        params.set('status', currentStatus);
+        if (classFilter) params.set('class', classFilter);
+        else params.delete('class');
+        
+        if (dateFilter) params.set('date', dateFilter);
+        else params.delete('date');
+        
+        window.location.href = `{{ url_for('staff.od_approval') }}?${params.toString()}`;
+    }
+    
+    function viewODDetails(requestId) {
+        console.log('🔍 Opening OD details for:', requestId);
+        
+        // Open modal
+        if (window.appUtils && window.appUtils.openModal) {
+            window.appUtils.openModal('odDetailsModal');
+        } else {
+            document.getElementById('odDetailsModal').style.display = 'flex';
+        }
+        
+        // Show loading
+        document.getElementById('odDetailsContent').innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+                <div class="spinner"></div>
+                <p style="color: #6b7280; margin-top: 15px;">Loading OD request details...</p>
+            </div>
+        `;
+        
+        // Fetch details from server
+        fetch(`/staff/od-details/${requestId}`)
+            .then(response => {
+                console.log('📡 Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}`);
+                }
+                
+                return response.json();
+            })
+            .then(data => {
+                console.log('✅ Received data:', data);
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                displayODDetails(data);
+            })
+            .catch(error => {
+                console.error('❌ Error loading OD details:', error);
+                
+                document.getElementById('odDetailsContent').innerHTML = `
+                    <div style="text-align: center; padding: 40px;">
+                        <p style="color: #ef4444; font-size: 18px; margin-bottom: 10px;">❌ Failed to load details</p>
+                        <p style="color: #6b7280; font-size: 14px; margin-bottom: 20px;">${error.message}</p>
+                        <button onclick="closeModal('odDetailsModal')" 
+                                class="btn btn-secondary">
+                            Close
+                        </button>
+                    </div>
+                `;
+            });
+    }
+    
+    function displayODDetails(data) {
+        // Handle missing data safely
+        const safeValue = (value, fallback = 'N/A') => value || fallback;
+        
+        const content = `
+            <div style="line-height: 1.8;">
+                <div class="grid grid-2" style="gap: 20px;">
+                    <div>
+                        <p><strong>Request ID:</strong> ${safeValue(data.request_id)}</p>
+                        <p><strong>Student ID:</strong> ${safeValue(data.student_id)}</p>
+                        <p><strong>Student Name:</strong> ${safeValue(data.student_name)}</p>
+                        <p><strong>Class:</strong> ${safeValue(data.class)}</p>
+                        <p><strong>Contact:</strong> ${safeValue(data.contact)}</p>
+                    </div>
+                    <div>
+                        <p><strong>Date:</strong> ${safeValue(data.date)}</p>
+                        <p><strong>Time:</strong> ${safeValue(data.start_time)} - ${safeValue(data.end_time)}</p>
+                        <p><strong>Type:</strong> ${safeValue(data.od_type)}</p>
+                        <p><strong>Venue:</strong> ${safeValue(data.venue)}</p>
+                        <p><strong>Submitted:</strong> ${safeValue(data.submitted_at)}</p>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <p><strong>Reason:</strong></p>
+                    <p style="padding: 15px; background: #f9fafb; border-radius: 5px; color: #333;">
+                        ${safeValue(data.reason, 'No reason provided')}
+                    </p>
+                </div>
+                
+                ${data.proof_file ? `
+                    <div style="margin-top: 20px;">
+                        <p><strong>Supporting Document:</strong></p>
+                        <a href="/static/uploads/od_proofs/${data.proof_file}" 
+                          target="_blank"
+                           class="btn btn-secondary">
+                           📄 View Document
+                        </a>
+                    </div>
+                ` : ''}
+                
+                ${data.status === 'pending' ? `
+                    <div style="margin-top: 30px;">
+                        <div class="form-group">
+                            <label for="remarks">Remarks (Optional)</label>
+                            <textarea id="remarks" 
+                                      class="form-control" 
+                                      rows="3" 
+                                      placeholder="Add any comments..."></textarea>
+                        </div>
+                        
+                        <div style="display: flex; gap: 15px; margin-top: 20px;">
+                            <button onclick="approveOD('${data.request_id}')" 
+                                    class="btn btn-success" 
+                                    style="flex: 1;">
+                                ✓ Approve
+                            </button>
+                            <button onclick="rejectOD('${data.request_id}')" 
+                                    class="btn btn-danger" 
+                                    style="flex: 1;">
+                                ✗ Reject
+                            </button>
+                        </div>
+                    </div>
+                ` : `
+                    <div style="margin-top: 20px; padding: 15px; background: #f9fafb; border-radius: 5px;">
+                        <p><strong>Status:</strong> 
+                            <span class="badge badge-${data.status === 'approved' ? 'success' : 'danger'}">
+                                ${data.status ? data.status.toUpperCase() : 'UNKNOWN'}
+                            </span>
+                        </p>
+                        ${data.approved_by ? `<p><strong>Approved By:</strong> ${data.approved_by}</p>` : ''}
+                        ${data.approved_at ? `<p><strong>Approved At:</strong> ${data.approved_at}</p>` : ''}
+                        ${data.remarks ? `<p><strong>Remarks:</strong> ${data.remarks}</p>` : ''}
+                    </div>
+                `}
+            </div>
+        `;
+        
+        document.getElementById('odDetailsContent').innerHTML = content;
+    }
+    
+    function approveOD(requestId) {
+        const remarks = document.getElementById('remarks') ? document.getElementById('remarks').value : '';
+        
+        if (confirm('Are you sure you want to approve this OD request?')) {
+            const formData = new FormData();
+            formData.append('remarks', remarks);
+            
+            fetch(`/staff/od-approve/${requestId}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    showNotification('OD request approved successfully', 'success');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showNotification('Failed to approve OD request', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Failed to approve OD request', 'error');
+            });
+        }
+    }
+    
+    function rejectOD(requestId) {
+        const remarks = document.getElementById('remarks') ? document.getElementById('remarks').value : '';
+        
+        if (!remarks) {
+            alert('Please provide a reason for rejection');
+            return;
+        }
+        
+        if (confirm('Are you sure you want to reject this OD request?')) {
+            const formData = new FormData();
+            formData.append('remarks', remarks);
+            
+            fetch(`/staff/od-reject/${requestId}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    showNotification('OD request rejected', 'success');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showNotification('Failed to reject OD request', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Failed to reject OD request', 'error');
+            });
+        }
+    }
+    
+    function closeModal(modalId) {
+        if (window.appUtils && window.appUtils.closeModal) {
+            window.appUtils.closeModal(modalId);
+        } else {
+            document.getElementById(modalId).style.display = 'none';
+        }
+    }
+    
+    function showNotification(message, type) {
+        if (window.appUtils && window.appUtils.showNotification) {
+            window.appUtils.showNotification(message, type);
+        } else {
+            alert(message);
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Bus Pass{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/student.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container student-dashboard">
+    <div class="card">
+        <h2 class="card-title">My Bus Pass</h2>
+
+        <div style="text-align: center; padding: 20px;">
+            {% if qr_code %}
+            <div class="qr-container"
+                style="background: white; padding: 20px; border-radius: 10px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <img src="{{ qr_code }}" alt="Bus Pass QR" style="width: 100%; max-width: 300px;">
+                <p style="margin-top: 15px; font-weight: bold; color: #10b981;">
+                    ✅ Active Bus Pass
+                </p>
+                <p style="color: #6b7280; font-size: 0.9em;">
+                    Scan this QR to verify
+                </p>
+            </div>
+            {% else %}
+            <div class="alert alert-danger">
+                Failed to generate Bus Pass QR. Please contact admin.
+            </div>
+            {% endif %}
+
+            <div style="margin-top: 30px;">
+                <a href="{{ url_for('student.dashboard') }}" class="btn btn-secondary">
+                    ← Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

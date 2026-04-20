@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}FaceWave{% endblock %}</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png"
+        href="{{ url_for('static', filename='images/Gemini_Generated_Image_5voucu5voucu5vou.png') }}">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+
+<body>
+    <!-- Navigation Bar -->
+    {% if session.user_id %}
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">
+                <img src="{{ url_for('static', filename='images/Gemini_Generated_Image_5voucu5voucu5vou.png') }}"
+                    alt="Logo" style="height: 40px; vertical-align: middle; border-radius: 50%;">
+                <span style="margin-left: 10px;">FaceWave</span>
+            </div>
+
+            <ul class="nav-links">
+                {% if session.role == 'student' %}
+                <li><a href="{{ url_for('student.dashboard') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('student.attendance') }}">Attendance</a></li>
+                <li><a href="{{ url_for('student.apply_od') }}">Apply OD</a></li>
+                <li><a href="{{ url_for('student.hostel_pass') }}">Hostel Pass</a></li>
+                <li><a href="{{ url_for('student.bus_pass') }}">Bus Pass</a></li>
+
+                {% elif session.role == 'staff' %}
+                <li><a href="{{ url_for('staff.dashboard') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('staff.view_attendance') }}">View Attendance</a></li>
+                <li><a href="{{ url_for('staff.od_approval') }}">OD Approval</a></li>
+                <li><a href="{{ url_for('staff.hostel_approval') }}">Hostel Approval</a></li>
+                <li><a href="{{ url_for('staff.reports') }}">Reports</a></li>
+
+                {% elif session.role == 'admin' %}
+                <li><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('admin.manage_users') }}">Manage Users</a></li>
+                <li><a href="{{ url_for('admin.system_logs') }}">System Logs</a></li>
+                {% endif %}
+
+                <li><a href="{{ url_for('auth.logout') }}" style="color: #ef4444;">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+    {% endif %}
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="container" style="margin-top: 20px;">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 FaceWave. All rights reserved.</p>
+            <p>Developed with AI-powered face recognition technology</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+                    .then(reg => console.log('SW registered!', reg))
+                    .catch(err => console.log('SW registration failed: ', err));
+            });
+        }
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

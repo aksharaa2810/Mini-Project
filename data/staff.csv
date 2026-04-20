@@ -1,0 +1,25 @@
+user_id,name,email,password,department,designation,created_at,phone
+STAFF001,malar,bloghosting34@gmail.com,3ae6e81e3b4581a5a362f6e8146a01c151adace36439ff609baa6819bf7be2aa,Electronics,Professor,,6374127709.0
+STAFF002,LINGKASH K B,lingkash.kb@srec.ac.in,dd01c428e23178ee3975f090c6c68ad42b72368a83ac6f39eaeb5dd5ce60672e,Computer Science,Assistant Professor,,7338939762.0
+2411002,Abhishek,abhishek.2411002@srec.ac.in,ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f,Administration,Admin,2026-02-03 15:50:47,
+STAFF009,Mrs.Gomathi,goamthi.v@srec.ac.in,ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f,Computer Science,Assistant Professor,,9513574682.0
+STAFF010,Dr. Ishaan Kumar,ishaan.kumar10@srec.ac.in,ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f,Computer Science,Lecturer,2026-02-03 19:41:11,9217739359.0
+STAFF011,Reyansh Sharma,reyansh.sharma11@srec.ac.in,ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f,Computer Science,Lecturer,2026-02-03 19:41:11,9339653692.0
+STAFF012,Ria Menon,ria.menon12@srec.ac.in,ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f,Computer Science,Associate Professor,2026-02-03 19:41:11,9912151741.0
+STAFF013,Aadhya Rao,aadhya.rao13@srec.ac.in,ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f,Computer Science,Lecturer,2026-02-03 19:41:11,9621327732.0
+STAFF014,Dr. Aadhya Reddy,aadhya.reddy14@srec.ac.in,ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f,Electronics Engineering,Professor,2026-02-03 19:41:11,9759909285.0
+STAFF015,Arjun Verma,arjun.verma15@srec.ac.in,ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f,Electronics Engineering,Assistant Professor,2026-02-03 19:41:11,9094082381.0
+STAFF016,Anika Jain,anika.jain16@srec.ac.in,ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f,Electronics Engineering,Lecturer,2026-02-03 19:41:11,9424362915.0
+STAFF017,Aditya Bhatia,aditya.bhatia17@srec.ac.in,ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f,Electronics Engineering,Associate Professor,2026-02-03 19:41:11,9792369807.0
+STAFF018,Dr. Ishaan Pillai,ishaan.pillai18@srec.ac.in,ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f,Mechanical Engineering,Professor,2026-02-03 19:41:11,9228014023.0
+STAFF019,Anya Singh,anya.singh19@srec.ac.in,ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f,Mechanical Engineering,Professor,2026-02-03 19:41:11,9228959633.0
+STAFF020,Diya Shah,diya.shah20@srec.ac.in,ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f,Mechanical Engineering,Assistant Professor,2026-02-03 19:41:11,9072030004.0
+STAFF021,Myra Menon,myra.menon21@srec.ac.in,ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f,Mechanical Engineering,Lecturer,2026-02-03 19:41:11,9883047715.0
+STAFF022,Dr. Ayan Nair,ayan.nair22@srec.ac.in,ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f,Civil Engineering,Associate Professor,2026-02-03 19:41:11,9906844699.0
+STAFF023,Aditya Malhotra,aditya.malhotra23@srec.ac.in,ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f,Civil Engineering,Associate Professor,2026-02-03 19:41:11,9063152574.0
+STAFF024,Ayan Menon,ayan.menon24@srec.ac.in,ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f,Civil Engineering,Assistant Professor,2026-02-03 19:41:11,9579311274.0
+STAFF025,Saanvi Sharma,saanvi.sharma25@srec.ac.in,ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f,Civil Engineering,Assistant Professor,2026-02-03 19:41:11,9952933259.0
+STAFF026,Dr. Anika Reddy,anika.reddy26@srec.ac.in,ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f,Information Technology,Associate Professor,2026-02-03 19:41:11,9450623912.0
+STAFF027,Arjun Pillai,arjun.pillai27@srec.ac.in,ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f,Information Technology,Professor,2026-02-03 19:41:11,9684201309.0
+STAFF028,Reyansh Bhatia,reyansh.bhatia28@srec.ac.in,ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f,Information Technology,Professor,2026-02-03 19:41:11,9733344188.0
+STAFF029,Ayan Mehta,ayan.mehta29@srec.ac.in,ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f,Information Technology,Lecturer,2026-02-03 19:41:11,9164531571.0

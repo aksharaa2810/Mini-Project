@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block title %}Hostel Pass{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/student.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container student-dashboard">
+
+    <h1 style="color: white; margin-bottom: 30px;">Hostel Out-Pass Management</h1>
+
+    <div class="grid grid-2">
+
+        <!-- Request New Pass -->
+        <div class="card">
+            <h2 class="card-title">Request New Out-Pass</h2>
+
+            <form method="POST" action="{{ url_for('student.hostel_pass') }}" id="hostelPassForm">
+
+                <!-- Out Date & Time -->
+                <div class="form-group">
+                    <label for="out_date">Exit Date <span style="color: red;">*</span></label>
+                    <input type="date" name="out_date" id="out_date" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="out_time">Exit Time <span style="color: red;">*</span></label>
+                    <input type="time" name="out_time" id="out_time" class="form-control" required>
+                </div>
+
+                <!-- In Date & Time -->
+                <div class="form-group">
+                    <label for="in_date">Return Date <span style="color: red;">*</span></label>
+                    <input type="date" name="in_date" id="in_date" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="in_time">Return Time <span style="color: red;">*</span></label>
+                    <input type="time" name="in_time" id="in_time" class="form-control" required>
+                </div>
+
+                <!-- Destination -->
+                <div class="form-group">
+                    <label for="destination">Destination <span style="color: red;">*</span></label>
+                    <input type="text" name="destination" id="destination" class="form-control"
+                        placeholder="Where are you going?" required>
+                </div>
+
+                <!-- Reason -->
+                <div class="form-group">
+                    <label for="reason">Reason <span style="color: red;">*</span></label>
+                    <textarea name="reason" id="reason" class="form-control" rows="3"
+                        placeholder="Please provide reason for exit..." required minlength="10"></textarea>
+                </div>
+
+                <!-- Emergency Contact -->
+                <div class="form-group">
+                    <label for="emergency_contact">Emergency Contact Number <span style="color: red;">*</span></label>
+                    <input type="tel" name="emergency_contact" id="emergency_contact" class="form-control"
+                        placeholder="Contact number during absence" pattern="[0-9]{10}" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    Submit Request
+                </button>
+
+            </form>
+        </div>
+
+        <!-- Active Pass -->
+        <div class="card">
+            <h2 class="card-title">Active Pass</h2>
+
+            {% if active_pass %}
+            <div class="qr-container">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <span class="badge badge-success" style="font-size: 16px;">Active</span>
+                </div>
+
+                <div class="qr-code" id="activePassQR">
+                    <img src="{{ active_pass.qr_code }}" alt="QR Code" style="width: 100%; height: auto;">
+                </div>
+
+                <div class="qr-info">
+                    <p><strong>Pass ID:</strong> {{ active_pass.pass_id }}</p>
+                    <p><strong>Exit:</strong> {{ active_pass.out_date }} {{ active_pass.out_time }}</p>
+                    <p><strong>Return:</strong> {{ active_pass.in_date }} {{ active_pass.in_time }}</p>
+                    <p><strong>Destination:</strong> {{ active_pass.destination }}</p>
+                </div>
+
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
+                    <button onclick="downloadQR()" class="btn btn-secondary" style="flex: 1;">
+                        📥 Download
+                    </button>
+                    <button onclick="shareQR()" class="btn btn-secondary" style="flex: 1;">
+                        📤 Share
+                    </button>
+                </div>
+            </div>
+            {% else %}
+            <div style="text-align: center; padding: 40px; color: #6b7280;">
+                <div style="font-size: 48px; margin-bottom: 15px;">🔒</div>
+                <p>No active pass</p>
+                <p style="font-size: 14px;">Request a new out-pass to generate QR code</p>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- Pass History -->
+    <div class="pass-list" style="margin-top: 40px;">
+        <h2 class="card-title">Pass History</h2>
+
+        {% if passes %}
+        {% for pass in passes %}
+        <div class="pass-item">
+            <div class="pass-details">
+                <h3>{{ pass.destination }}</h3>
+                <p>
+                    <strong>Out:</strong> {{ pass.out_date }} {{ pass.out_time }} |
+                    <strong>In:</strong> {{ pass.in_date }} {{ pass.in_time }}
+                </p>
+                <p style="color: #6b7280; font-size: 13px;">
+                    Reason: {{ pass.reason }}
+                </p>
+                <p style="color: #6b7280; font-size: 13px;">
+                    Requested: {{ pass.created_at }}
+                </p>
+            </div>
+        </div>
+        <div>
+            {% if pass.status == 'approved' %}
+            <span class="badge badge-success">Approved</span>
+            <div style="margin-top: 10px;">
+                <button class="btn btn-sm btn-outline-primary" onclick="viewQR('{{ pass.pass_id }}')">
+                    👁 View QR
+                </button>
+            </div>
+            {% elif pass.status == 'rejected' %}
+            <span class="badge badge-danger">Rejected</span>
+            {% elif pass.status == 'pending' %}
+            <span class="badge badge-warning">Pending</span>
+            {% elif pass.status == 'expired' %}
+            <span class="badge badge-secondary">Expired</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p style="text-align: center; color: #6b7280; padding: 40px;">
+        No pass history available
+    </p>
+    {% endif %}
+</div>
+
+<!-- Guidelines -->
+<div class="card" style="margin-top: 40px; background: #f9fafb;">
+    <h2 class="card-title">Hostel Pass Guidelines</h2>
+    <ul style="color: #6b7280; line-height: 2;">
+        <li>✓ Request pass at least 2 hours before departure</li>
+        <li>✓ Show QR code at hostel gate during exit and entry</li>
+        <li>✓ Return before the specified return time</li>
+        <li>✓ Keep emergency contact number active during absence</li>
+        <li>✓ In case of delay, inform hostel warden immediately</li>
+        <li>✗ Pass becomes invalid after return time</li>
+        <li>✗ Do not share your QR code with anyone</li>
+    </ul>
+</div>
+
+</div>
+
+<!-- QR Modal -->
+<div id="qrModal" class="modal">
+    <div class="modal-content" style="text-align: center;">
+        <span class="close" onclick="closeQRModal()">&times;</span>
+        <h2>Hostel Pass QR</h2>
+        <div id="modalQRContent">
+            <div class="spinner"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Modal styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 400px;
+        border-radius: 10px;
+    }
+
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .close:hover,
+    .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .btn-sm {
+        padding: 5px 10px;
+        font-size: 0.8rem;
+    }
+
+    .btn-outline-primary {
+        background: transparent;
+        border: 1px solid #667eea;
+        color: #667eea;
+        cursor: pointer;
+    }
+
+    .btn-outline-primary:hover {
+        background: #667eea;
+        color: white;
+    }
+</style>
+
+<script>
+    // Form validation
+    document.getElementById('hostelPassForm').addEventListener('submit', function (e) {
+        const outDate = new Date(document.getElementById('out_date').value + ' ' + document.getElementById('out_time').value);
+        const inDate = new Date(document.getElementById('in_date').value + ' ' + document.getElementById('in_time').value);
+
+        if (inDate <= outDate) {
+            e.preventDefault();
+            alert('Return date and time must be after exit date and time');
+        }
+    });
+
+    // Download QR code
+    function downloadQR() {
+        window.qrUtils.downloadQR('activePassQR', 'hostel_pass.png');
+    }
+
+    // Share QR code
+    function shareQR() {
+        window.qrUtils.shareQR('activePassQR', 'My Hostel Pass');
+    }
+
+    // Set minimum dates
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('out_date').min = today;
+    document.getElementById('in_date').min = today;
+
+    // View QR Modal Logic
+    function viewQR(passId) {
+        const modal = document.getElementById('qrModal');
+        const content = document.getElementById('modalQRContent');
+        modal.display = 'block'; // Make sure this is valid CSS
+        document.getElementById('qrModal').style.display = "block";
+
+        content.innerHTML = '<div class="spinner" style="margin: 20px auto;"></div><p>Loading QR...</p>';
+
+        fetch(`/student/get-hostel-qr/${passId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    content.innerHTML = `
+                        <img src="${data.qr_code}" alt="QR Code" style="width: 100%; max-width: 250px; margin-bottom: 15px;">
+                        <p style="color: green; font-weight: bold;">✅ Valid Pass</p>
+                    `;
+                } else {
+                    content.innerHTML = `<p style="color: red;">Error: ${data.message}</p>`;
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                content.innerHTML = '<p style="color: red;">Failed to load QR code</p>';
+            });
+    }
+
+    function closeQRModal() {
+        document.getElementById('qrModal').style.display = "none";
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function (event) {
+        const modal = document.getElementById('qrModal');
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,8 @@
+request_id,student_id,od_type,venue,date,start_time,end_time,reason,proof_file,status,submitted_at,approved_by,approved_at,remarks
+OD_1768848238,STU001,Other,,2026-01-20,09:00,17:00,I am participating in a hackathon competition,STU001_1768848238.417237.pdf,approved,2026-01-20 00:13:58,STAFF001,2026-01-20 00:22:31,okey done jancy
+OD_1768905445,STU002,Other,,2026-01-21,09:06,16:06,JHFYHLKJHGFTGKJIGIUJKJ,,approved,2026-01-20 16:07:25,STAFF002,2026-02-03 11:18:54,
+OD_1770095746,STU002,Other,,2026-02-05,11:45,13:47,JGDFYIJGFKYTDU,,approved,2026-02-03 10:45:46,STAFF002,2026-02-03 12:00:43,
+OD_1770096794,STU002,Other,,2026-02-14,11:05,11:08,asdfghjkasdfghjksdfghjk,STU002_1770096794.169067.pdf,approved,2026-02-03 11:03:14,STAFF002,2026-02-03 12:07:43,
+OD_1770565569,STU023,Other,,2026-02-12,15:16,23:14,Thamarai Malarnthyee Theerum,STU023_1770565569.738465.pdf,rejected,2026-02-08 21:16:09,STAFF013,2026-02-08 21:17:03,Not intrested
+OD_1776708333,STU008,Symposium,Main Auditorium,2026-04-22,00:34,04:35,qwertyuiop,,approved,2026-04-20 23:35:33,STAFF009,2026-04-20 23:37:55,
+OD_1776708632,STU008,Other,Conference Hall,2026-04-21,03:40,05:40,asdfghjkl;,,approved,2026-04-20 23:40:32,STAFF009,2026-04-20 23:49:25,

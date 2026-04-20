@@ -1,0 +1,768 @@
+{% extends "base.html" %}
+
+{% block title %}Reports{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<style>
+    .chart-container {
+        position: relative;
+        height: 400px;
+        margin: 20px 0;
+    }
+    
+    .report-card {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+    }
+    
+    .report-options {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        margin: 20px 0;
+    }
+    
+    .report-option {
+        flex: 1;
+        min-width: 200px;
+        padding: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: transform 0.3s;
+    }
+    
+    .report-option:hover {
+        transform: translateY(-5px);
+    }
+    
+    .report-option h3 {
+        font-size: 18px;
+        margin-bottom: 10px;
+    }
+    
+    .report-option p {
+        font-size: 14px;
+        opacity: 0.9;
+    }
+    
+    /* Fix for success button styling */
+    .btn-success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container admin-dashboard">
+    
+    <div class="report-card">
+        <h1 class="card-title">Reports & Analytics</h1>
+        <p style="color: #6b7280;">Generate comprehensive reports and analyze attendance data</p>
+    </div>
+    
+    <!-- Report Type Selection -->
+    <div class="report-card">
+        <h2 class="card-title">Select Report Type</h2>
+        
+        <div class="report-options">
+            <div class="report-option" onclick="showReportForm('attendance')">
+                <h3>📊 Attendance Report</h3>
+                <p>Class-wise attendance summary</p>
+            </div>
+            
+            <div class="report-option" onclick="showReportForm('student')">
+                <h3>👤 Student Report</h3>
+                <p>Individual student analysis</p>
+            </div>
+            
+            <div class="report-option" onclick="showReportForm('defaulters')">
+                <h3>⚠️ Defaulters Report</h3>
+                <p>Students below 75% attendance</p>
+            </div>
+            
+            <div class="report-option" onclick="showReportForm('od')">
+                <h3>📝 OD Report</h3>
+                <p>On-duty statistics</p>
+            </div>
+            
+            <div class="report-option" onclick="showReportForm('monthly')">
+                <h3>📅 Monthly Report</h3>
+                <p>Month-wise attendance trends</p>
+            </div>
+            
+            <div class="report-option" onclick="showReportForm('comparison')">
+                <h3>📈 Comparison Report</h3>
+                <p>Compare multiple classes</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Report Generation Form -->
+    <div class="report-card" id="reportFormContainer" style="display: none;">
+        <h2 class="card-title">Generate Report</h2>
+        
+        <form id="reportForm">
+            <div class="grid grid-3">
+                <div class="form-group">
+                    <label for="reportClass">Select Class</label>
+                    <select id="reportClass" class="form-control" required>
+                        <option value="">Select Class</option>
+                        <option value="all">All Classes</option>
+                        <option value="CSE-A">CSE-A</option>
+                        <option value="CSE-B">CSE-B</option>
+                        <option value="ECE-A">ECE-A</option>
+                        <option value="ECE-B">ECE-B</option>
+                        <option value="MECH-A">MECH-A</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="startDate">Start Date</label>
+                    <input type="date" id="startDate" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="endDate">End Date</label>
+                    <input type="date" id="endDate" class="form-control" required>
+                </div>
+            </div>
+            
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label for="reportFormat">Report Format</label>
+                    <select id="reportFormat" class="form-control">
+                        <option value="pdf">PDF</option>
+                        <option value="excel">Excel</option>
+                        <option value="csv">CSV</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reportSubject">Subject (Optional)</label>
+                    <select id="reportSubject" class="form-control">
+                        <option value="">All Subjects</option>
+                        <!-- Computer Science -->
+                        <option value="Data Structures">Data Structures</option>
+                        <option value="Operating Systems">Operating Systems</option>
+                        <option value="Database Management">Database Management</option>
+                        <option value="Computer Networks">Computer Networks</option>
+                        <option value="Algorithm Lab">Algorithm Lab</option>
+                        <option value="Web Development">Web Development</option>
+                        <option value="Python Programming">Python Programming</option>
+                        <option value="Software Engineering">Software Engineering</option>
+                        <option value="Web Technologies">Web Technologies</option>
+                        <option value="DBMS Lab">DBMS Lab</option>
+                        <option value="AI">AI</option>
+                        <option value="Machine Learning">Machine Learning</option>
+                        <option value="Software Testing">Software Testing</option>
+                        <option value="Compiler Design">Compiler Design</option>
+                        <option value="Cloud Computing">Cloud Computing</option>
+                        <option value="Cryptography">Cryptography</option>
+                        <option value="Computer Graphics">Computer Graphics</option>
+
+                        <!-- Electrical Engineering -->
+                        <option value="Analog Circuits">Analog Circuits</option>
+                        <option value="Digital Electronics">Digital Electronics</option>
+                        <option value="Signals & Systems">Signals & Systems</option>
+                        <option value="Network Analysis">Network Analysis</option>
+                        <option value="Digital Logic">Digital Logic</option>
+                        <option value="Programming">Programming</option>
+                        <option value="Microwave">Microwave</option>
+                        <option value="Embedded System">Embedded System</option>
+                        <option value="Hardware Testing">Hardware Testing</option>
+                        <option value="PCB Design">PCB Design</option>
+
+                        <!-- Mechanical Engineering -->
+                        <option value="Engineering Mathematics – III">Engineering Mathematics – III</option>
+                        <option value="Strength of Materials">Strength of Materials</option>
+                        <option value="Thermodynamics">Thermodynamics</option>
+                        <option value="Manufacturing Processes">Manufacturing Processes</option>
+                        <option value="Fluid Mechanics">Fluid Mechanics</option>
+                        <option value="Programming for Engineers">Programming for Engineers</option>
+                        <option value="Material Science">Material Science</option>
+                        <option value="Engineering Thermodynamics">Engineering Thermodynamics</option>
+                        <option value="Manufacturing Technology">Manufacturing Technology</option>
+                        <option value="Engineering Drawing">Engineering Drawing</option>
+                        <option value="Metrology and Measurements">Metrology and Measurements</option>
+                        <option value="CAD / CAM">CAD / CAM</option>
+                        <option value="Computer-Aided Engineering">Computer-Aided Engineering</option>
+
+                        <!-- Civil Engineering -->
+                        <option value="Surveying – I">Surveying – I</option>
+                        <option value="Engineering Geology">Engineering Geology</option>
+                        <option value="Construction Materials">Construction Materials</option>
+                        <option value="Building Construction">Building Construction</option>
+                        <option value="Surveying Instruments">Surveying Instruments</option>
+                        <option value="CAD for Civil Engineering">CAD for Civil Engineering</option>
+                        <option value="Environmental Engineering – I">Environmental Engineering – I</option>
+
+                        <!-- Electronics Engineering -->
+                        <option value="Electronic Devices & Circuits">Electronic Devices & Circuits</option>
+                        <option value="Linear Integrated Circuits">Linear Integrated Circuits</option>
+                        <option value="Electronic Measurements & Instrumentation">Electronic Measurements & Instrumentation</option>
+                        <option value="Digital System Design">Digital System Design</option>
+
+                        <!-- Common -->
+                        <option value="Aptitude">Aptitude</option>
+                        <option value="Library">Library</option>
+                        <option value="Project Work">Project Work</option>
+                        <option value="Seminar">Seminar</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin-top: 20px;">
+                <button type="button" onclick="generateReport()" class="btn btn-primary" style="flex: 1;">
+                    📊 Generate Report
+                </button>
+                <button type="button" onclick="previewReport()" class="btn btn-secondary" style="flex: 1;">
+                    👁️ Preview
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Report Preview -->
+    <div class="report-card" id="reportPreview" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <h2 class="card-title" style="margin: 0;">Report Preview</h2>
+            <button onclick="closePreview()" class="btn btn-secondary">✕ Close</button>
+        </div>
+        
+        <!-- Summary Cards -->
+        <div class="grid grid-4" style="margin-bottom: 30px;">
+            <div class="stat-box">
+                <div class="info">
+                    <h3 id="previewTotal">0</h3>
+                    <p>Total Students</p>
+                </div>
+            </div>
+            
+            <div class="stat-box" style="background: #d1fae5;">
+                <div class="info">
+                    <h3 id="previewPresent" style="color: #065f46;">0</h3>
+                    <p>Average Present</p>
+                </div>
+            </div>
+            
+            <div class="stat-box" style="background: #fee2e2;">
+                <div class="info">
+                    <h3 id="previewAbsent" style="color: #991b1b;">0</h3>
+                    <p>Average Absent</p>
+                </div>
+            </div>
+            
+            <div class="stat-box" style="background: #dbeafe;">
+                <div class="info">
+                    <h3 id="previewPercentage" style="color: #1e40af;">0%</h3>
+                    <p>Overall Percentage</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts -->
+        <div class="grid grid-2">
+            <div>
+                <h3 style="color: #667eea; margin-bottom: 15px;">Attendance Trend</h3>
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+            
+            <div>
+                <h3 style="color: #667eea; margin-bottom: 15px;">Status Distribution</h3>
+                <div class="chart-container">
+                    <canvas id="pieChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Detailed Table -->
+        <div style="margin-top: 40px;">
+            <h3 style="color: #667eea; margin-bottom: 15px;">Detailed Data</h3>
+            <div style="overflow-x: auto;">
+                <table class="table" id="previewTable">
+                    <thead>
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Name</th>
+                            <th>Total Classes</th>
+                            <th>Present</th>
+                            <th>Absent</th>
+                            <th>OD</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewTableBody">
+                        <!-- Data loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Export Options -->
+        <div style="margin-top: 30px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+            <button onclick="downloadReport('pdf')" class="btn btn-primary">
+                📄 Download PDF
+            </button>
+            <button onclick="downloadReport('excel')" class="btn btn-secondary">
+                📊 Download Excel
+            </button>
+            <button onclick="downloadReport('csv')" class="btn btn-secondary">
+                📥 Download CSV
+            </button>
+            <button onclick="sendToParents()" class="btn btn-success">
+                📧 Send to Parents
+            </button>
+        </div>
+    </div>
+    
+    <!-- Quick Statistics -->
+    <div class="report-card">
+        <h2 class="card-title">Quick Statistics</h2>
+        
+        <div class="grid grid-3">
+            <div style="padding: 20px; background: #f9fafb; border-radius: 10px;">
+                <h4 style="color: #667eea; margin-bottom: 10px;">Today's Attendance</h4>
+                <p style="font-size: 32px; font-weight: bold; color: #333; margin-bottom: 5px;">
+                    {{ today_stats.percentage if today_stats else '0' }}%
+                </p>
+                <p style="color: #6b7280; font-size: 14px;">
+                    {{ today_stats.present if today_stats else '0' }} / {{ today_stats.total if today_stats else '0' }} students present
+                </p>
+            </div>
+            
+            <div style="padding: 20px; background: #f9fafb; border-radius: 10px;">
+                <h4 style="color: #667eea; margin-bottom: 10px;">This Week</h4>
+                <p style="font-size: 32px; font-weight: bold; color: #333; margin-bottom: 5px;">
+                    {{ week_stats.percentage if week_stats else '0' }}%
+                </p>
+                <p style="color: #6b7280; font-size: 14px;">
+                    Average attendance this week
+                </p>
+            </div>
+            
+            <div style="padding: 20px; background: #f9fafb; border-radius: 10px;">
+                <h4 style="color: #667eea; margin-bottom: 10px;">This Month</h4>
+                <p style="font-size: 32px; font-weight: bold; color: #333; margin-bottom: 5px;">
+                    {{ month_stats.percentage if month_stats else '0' }}%
+                </p>
+                <p style="color: #6b7280; font-size: 14px;">
+                    Average attendance this month
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Reports -->
+    <div class="report-card">
+        <h2 class="card-title">Recent Reports</h2>
+        
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Report Name</th>
+                    <th>Type</th>
+                    <th>Generated On</th>
+                    <th>Format</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if recent_reports %}
+                    {% for report in recent_reports %}
+                    <tr>
+                        <td>{{ report.name }}</td>
+                        <td><span class="badge badge-info">{{ report.type }}</span></td>
+                        <td>{{ report.generated_at }}</td>
+                        <td>{{ report.format.upper() }}</td>
+                        <td>
+                            <button class="btn btn-secondary" 
+                                    style="padding: 5px 15px; font-size: 14px;"
+                                    onclick="downloadPreviousReport('{{ report.id }}')">
+                                📥 Download
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #6b7280;">
+                            No recent reports
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+<script>
+    let currentReportType = '';
+    let trendChart = null;
+    let pieChart = null;
+    
+    function showReportForm(reportType) {
+        currentReportType = reportType;
+        document.getElementById('reportFormContainer').style.display = 'block';
+        document.getElementById('reportPreview').style.display = 'none';
+        
+        // Scroll to form
+        document.getElementById('reportFormContainer').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    function generateReport() {
+        const reportClass = document.getElementById('reportClass').value;
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        const format = document.getElementById('reportFormat').value;
+        
+        if (!reportClass || !startDate || !endDate) {
+            alert('Please fill in all required fields');
+            return;
+        }
+        
+        if (new Date(endDate) < new Date(startDate)) {
+            alert('End date must be after start date');
+            return;
+        }
+        
+        // Check if window.appUtils exists
+        const showLoading = window.appUtils && window.appUtils.showLoading 
+            ? () => window.appUtils.showLoading('reportFormContainer')
+            : () => console.log('Loading...');
+        
+        const hideLoading = window.appUtils && window.appUtils.hideLoading
+            ? () => window.appUtils.hideLoading('reportFormContainer')
+            : () => console.log('Loading complete');
+        
+        const showNotification = window.appUtils && window.appUtils.showNotification
+            ? window.appUtils.showNotification
+            : (msg, type) => alert(msg);
+        
+        showLoading();
+        
+        // Generate report
+        fetch('/staff/generate-report', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                type: currentReportType,
+                class: reportClass,
+                start_date: startDate,
+                end_date: endDate,
+                format: format,
+                subject: document.getElementById('reportSubject').value
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            // Download file
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${currentReportType}_report_${Date.now()}.${format}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            showNotification('Report generated successfully', 'success');
+        })
+        .catch(error => {
+            console.error('Error generating report:', error);
+            showNotification('Failed to generate report', 'error');
+        })
+        .finally(() => {
+            hideLoading();
+        });
+    }
+    
+    function previewReport() {
+        const reportClass = document.getElementById('reportClass').value;
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        
+        if (!reportClass || !startDate || !endDate) {
+            alert('Please fill in all required fields');
+            return;
+        }
+        
+        if (new Date(endDate) < new Date(startDate)) {
+            alert('End date must be after start date');
+            return;
+        }
+        
+        // Show preview section
+        document.getElementById('reportPreview').style.display = 'block';
+        document.getElementById('reportPreview').scrollIntoView({ behavior: 'smooth' });
+        
+        const showNotification = window.appUtils && window.appUtils.showNotification
+            ? window.appUtils.showNotification
+            : (msg, type) => alert(msg);
+        
+        // Fetch preview data
+        fetch('/staff/preview-report', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                type: currentReportType,
+                class: reportClass,
+                start_date: startDate,
+                end_date: endDate,
+                subject: document.getElementById('reportSubject').value
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            displayPreviewData(data);
+        })
+        .catch(error => {
+            console.error('Error loading preview:', error);
+            showNotification('Failed to load preview', 'error');
+        });
+    }
+    
+    function displayPreviewData(data) {
+        // Update summary cards with safe defaults
+        document.getElementById('previewTotal').textContent = data.summary?.total || 0;
+        document.getElementById('previewPresent').textContent = data.summary?.present || 0;
+        document.getElementById('previewAbsent').textContent = data.summary?.absent || 0;
+        document.getElementById('previewPercentage').textContent = (data.summary?.percentage || 0) + '%';
+        
+        // Update table
+        const tbody = document.getElementById('previewTableBody');
+        tbody.innerHTML = '';
+        
+        if (data.students && data.students.length > 0) {
+            data.students.forEach(student => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${student.student_id || 'N/A'}</td>
+                    <td>${student.name || 'N/A'}</td>
+                    <td>${student.total || 0}</td>
+                    <td>${student.present || 0}</td>
+                    <td>${student.absent || 0}</td>
+                    <td>${student.od || 0}</td>
+                    <td>
+                        <span class="badge badge-${(student.percentage || 0) >= 75 ? 'success' : 'danger'}">
+                            ${student.percentage || 0}%
+                        </span>
+                    </td>
+                `;
+            });
+        } else {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No data available</td></tr>';
+        }
+        
+        // Create charts
+        createCharts(data);
+    }
+    
+    function createCharts(data) {
+        // Destroy existing charts
+        if (trendChart) {
+            trendChart.destroy();
+            trendChart = null;
+        }
+        if (pieChart) {
+            pieChart.destroy();
+            pieChart = null;
+        }
+        
+        // Trend Chart
+        const trendCtx = document.getElementById('trendChart');
+        if (trendCtx && data.trend && data.trend.labels && data.trend.values) {
+            trendChart = new Chart(trendCtx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: data.trend.labels,
+                    datasets: [{
+                        label: 'Attendance %',
+                        data: data.trend.values,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Pie Chart
+        const pieCtx = document.getElementById('pieChart');
+        if (pieCtx && data.summary) {
+            pieChart = new Chart(pieCtx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Present', 'Absent', 'On-Duty'],
+                    datasets: [{
+                        data: [
+                            data.summary.present || 0, 
+                            data.summary.absent || 0, 
+                            data.summary.od || 0
+                        ],
+                        backgroundColor: ['#10b981', '#ef4444', '#3b82f6']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+    }
+    
+    function closePreview() {
+        document.getElementById('reportPreview').style.display = 'none';
+    }
+    
+    function downloadReport(format) {
+        const showNotification = window.appUtils && window.appUtils.showNotification
+            ? window.appUtils.showNotification
+            : (msg, type) => alert(msg);
+        
+        showNotification(`Downloading ${format.toUpperCase()} report...`, 'info');
+        
+        // Call the same function as generateReport but with specified format
+        const reportClass = document.getElementById('reportClass').value;
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        
+        fetch('/staff/generate-report', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                type: currentReportType,
+                class: reportClass,
+                start_date: startDate,
+                end_date: endDate,
+                format: format,
+                subject: document.getElementById('reportSubject').value
+            })
+        })
+        .then(response => response.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${currentReportType}_report_${Date.now()}.${format}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        })
+        .catch(error => {
+            console.error('Error downloading report:', error);
+            showNotification('Failed to download report', 'error');
+        });
+    }
+    
+    function sendToParents() {
+        if (!confirm("Send attendance report to all parents?")) return;
+        
+        fetch('/staff/send-parent-reports', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                alert(`Emails Sent: ${data.sent}\nFailed: ${data.failed}`);
+            } else {
+                alert(data.message || "Failed to send emails");
+            }
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Server error while sending emails");
+        });
+    }
+    
+    function downloadPreviousReport(reportId) {
+        window.location.href = `/staff/download-report/${reportId}`;
+    }
+    
+    // Set default dates (last 30 days)
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(today.getDate() - 30);
+        
+        const endDateInput = document.getElementById('endDate');
+        const startDateInput = document.getElementById('startDate');
+        
+        if (endDateInput) {
+            endDateInput.valueAsDate = today;
+        }
+        if (startDateInput) {
+            startDateInput.valueAsDate = thirtyDaysAgo;
+        }
+    });
+</script>
+{% endblock %}

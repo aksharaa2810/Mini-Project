@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container admin-dashboard">
+    
+    <div class="user-table">
+        <div class="table-header">
+            <h1>Manage Users</h1>
+            <button onclick="openModal('addUserModal')" class="btn btn-primary">
+                ➕ Add New User
+            </button>
+        </div>
+        
+        <!-- Tabs for User Roles -->
+        <div style="display: flex; gap: 15px; margin: 30px 0; border-bottom: 2px solid #e5e7eb;">
+            <button class="tab-btn {{ 'active' if role == 'student' else '' }}" 
+                    onclick="window.location.href='{{ url_for('admin.manage_users', role='student') }}'">
+                Students ({{ student_count }})
+            </button>
+            <button class="tab-btn {{ 'active' if role == 'staff' else '' }}" 
+                    onclick="window.location.href='{{ url_for('admin.manage_users', role='staff') }}'">
+                Staff ({{ staff_count }})
+            </button>
+            <button class="tab-btn {{ 'active' if role == 'admin' else '' }}" 
+                    onclick="window.location.href='{{ url_for('admin.manage_users', role='admin') }}'">
+                Admins ({{ admin_count }})
+            </button>
+        </div>
+        
+        <!-- Search and Filter -->
+        <div class="search-box">
+            <input type="text" 
+                   id="searchInput" 
+                   placeholder="🔍 Search by ID, name, or email..." 
+                   onkeyup="searchTable('searchInput', 'usersTable')">
+            
+            <select id="statusFilter" onchange="filterByStatus()" class="form-control" style="width: 200px;">
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+            </select>
+        </div>
+        
+        <!-- Users Table -->
+        <div style="overflow-x: auto; margin-top: 20px;">
+            <table class="table" id="usersTable">
+                <thead>
+                    <tr>
+                        <th>User ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        {% if role == 'student' %}
+                            <th>Class</th>
+                            <th>Roll No</th>
+                        {% elif role == 'staff' %}
+                            <th>Department</th>
+                            <th>Designation</th>
+                        {% endif %}
+                        <th>Created On</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if users %}
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.user_id }}</td>
+                            <td>{{ user.name }}</td>
+                            <td>{{ user.email }}</td>
+                            {% if role == 'student' %}
+                                <td>{{ user.class }}</td>
+                                <td>{{ user.roll_no }}</td>
+                            {% elif role == 'staff' %}
+                                <td>{{ user.department }}</td>
+                                <td>{{ user.designation }}</td>
+                            {% endif %}
+                            <td>{{ user.created_at }}</td>
+                            <td>
+                                <span class="badge badge-success">Active</span>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-secondary" 
+                                            onclick="editUser('{{ user.user_id }}')">
+                                        ✏️
+                                    </button>
+                                    <button class="btn btn-danger" 
+                                            onclick="deleteUser('{{ user.user_id }}', '{{ user.name }}')">
+                                        🗑️
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="9" style="text-align: center; color: #6b7280;">
+                                No users found
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        <div style="margin-top: 30px; text-align: center;">
+            <button class="btn btn-secondary">« Previous</button>
+            <span style="margin: 0 20px; color: #6b7280;">Page 1 of 1</span>
+            <button class="btn btn-secondary">Next »</button>
+        </div>
+        
+        <!-- Bulk Actions -->
+        <div style="margin-top: 30px;">
+            <button onclick="exportUsers()" class="btn btn-secondary">
+                📥 Export to CSV
+            </button>
+            <button onclick="importUsers()" class="btn btn-secondary">
+                📤 Import from CSV
+            </button>
+        </div>
+        
+    </div>
+    
+</div>
+
+<!-- Add User Modal -->
+<div class="modal" id="addUserModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add New User</h2>
+            <button class="modal-close" onclick="closeModal('addUserModal')">&times;</button>
+        </div>
+        
+        <form id="addUserForm" method="POST" action="{{ url_for('admin.add_user') }}">
+            <div class="form-group">
+                <label for="role">User Role <span style="color: red;">*</span></label>
+                <select name="role" id="role" class="form-control" required onchange="updateFormFields()">
+                    <option value="">Select Role</option>
+                    <option value="student">Student</option>
+                    <option value="staff">Staff</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label for="user_id">User ID <span style="color: red;">*</span></label>
+                    <input type="text" 
+                           name="user_id" 
+                           id="user_id" 
+                           class="form-control" 
+                           placeholder="e.g., STU001"
+                           required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="name">Full Name <span style="color: red;">*</span></label>
+                    <input type="text" 
+                           name="name" 
+                           id="name" 
+                           class="form-control" 
+                           placeholder="Enter full name"
+                           required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email <span style="color: red;">*</span></label>
+                <input type="email" 
+                       name="email" 
+                       id="email" 
+                       class="form-control" 
+                       placeholder="email@example.com"
+                       required>
+            </div>
+            
+            <!-- Student-specific fields -->
+            <div id="studentFields" style="display: none;">
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label for="class">Class</label>
+                        <select name="class" id="class" class="form-control">
+                            <option value="">Select Class</option>
+                            <option value="CSE-A">CSE-A</option>
+                            <option value="CSE-B">CSE-B</option>
+                            <option value="ECE-A">ECE-A</option>
+                            <option value="ECE-B">ECE-B</option>
+                            <option value="MECH-A">MECH-A</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="roll_no">Roll Number</label>
+                        <input type="text" 
+                               name="roll_no" 
+                               id="roll_no" 
+                               class="form-control" 
+                               placeholder="e.g., 101">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Staff-specific fields -->
+            <div id="staffFields" style="display: none;">
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label for="department">Department</label>
+                        <input type="text" 
+                               name="department" 
+                               id="department" 
+                               class="form-control" 
+                               placeholder="e.g., Computer Science">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="designation">Designation</label>
+                        <input type="text" 
+                               name="designation" 
+                               id="designation" 
+                               class="form-control" 
+                               placeholder="e.g., Assistant Professor">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password <span style="color: red;">*</span></label>
+                <input type="password" 
+                       name="password" 
+                       id="password" 
+                       class="form-control" 
+                       placeholder="Enter password"
+                       required>
+                <small style="color: #6b7280;">Minimum 8 characters</small>
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin-top: 30px;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">
+                    Add User
+                </button>
+                <button type="button" onclick="closeModal('addUserModal')" class="btn btn-secondary" style="flex: 1;">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal" id="editUserModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Edit User</h2>
+            <button class="modal-close" onclick="closeModal('editUserModal')">&times;</button>
+        </div>
+        
+        <div id="editUserContent">
+            <!-- Content loaded dynamically -->
+        </div>
+    </div>
+</div>
+
+<style>
+    .tab-btn {
+        padding: 10px 20px;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        color: #6b7280;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+    
+    .tab-btn.active {
+        color: #667eea;
+        border-bottom-color: #667eea;
+    }
+    
+    .tab-btn:hover {
+        color: #667eea;
+    }
+</style>
+
+<script>
+    function searchTable(inputId, tableId) {
+        window.appUtils.searchTable(inputId, tableId);
+    }
+    
+    function filterByStatus() {
+        const status = document.getElementById('statusFilter').value;
+        // Implement filter logic
+        console.log('Filter by status:', status);
+    }
+    
+    function updateFormFields() {
+        const role = document.getElementById('role').value;
+        const studentFields = document.getElementById('studentFields');
+        const staffFields = document.getElementById('staffFields');
+        
+        studentFields.style.display = role === 'student' ? 'block' : 'none';
+        staffFields.style.display = role === 'staff' ? 'block' : 'none';
+    }
+    
+    function editUser(userId) {
+        window.appUtils.openModal('editUserModal');
+        
+        // Load user data
+        fetch(`/admin/get-user/${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('editUserContent').innerHTML = `
+                    <form method="POST" action="/admin/edit-user/${userId}">
+                        <div class="form-group">
+                            <label>User ID</label>
+                            <input type="text" class="form-control" value="${data.user_id}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input type="text" name="name" class="form-control" value="${data.name}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" name="email" class="form-control" value="${data.email}" required>
+                        </div>
+                        <div style="display: flex; gap: 15px; margin-top: 20px;">
+                            <button type="submit" class="btn btn-primary" style="flex: 1;">Save Changes</button>
+                            <button type="button" onclick="closeModal('editUserModal')" class="btn btn-secondary" style="flex: 1;">Cancel</button>
+                        </div>
+                    </form>
+                `;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                window.appUtils.showNotification('Failed to load user data', 'error');
+            });
+    }
+    
+    function deleteUser(userId, userName) {
+        if (window.appUtils.confirmDelete(`Are you sure you want to delete user ${userName} (${userId})?`)) {
+            fetch(`/admin/delete-user/${userId}`, {
+                method: 'POST'
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.appUtils.showNotification('User deleted successfully', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    window.appUtils.showNotification('Failed to delete user', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                window.appUtils.showNotification('Network error', 'error');
+            });
+        }
+    }
+    
+    function exportUsers() {
+        window.appUtils.downloadCSV('usersTable', 'users_export.csv');
+    }
+    
+    function importUsers() {
+        window.appUtils.showNotification('Import functionality - Coming soon!', 'info');
+    }
+</script>
+{% endblock %}

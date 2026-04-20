@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Hostel Pass Approval{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container admin-dashboard">
+
+    <div class="card">
+        <h1 class="card-title">Hostel Pass Approval</h1>
+
+        <!-- Tabs -->
+        <div style="display: flex; gap: 15px; margin-bottom: 30px; border-bottom: 2px solid #e5e7eb;">
+            <button class="tab-btn {{ 'active' if status == 'pending' else '' }}"
+                onclick="window.location.href='{{ url_for('staff.hostel_approval', status='pending') }}'">
+                Pending ({{ pending_count }})
+            </button>
+            <button class="tab-btn {{ 'active' if status == 'approved' else '' }}"
+                onclick="window.location.href='{{ url_for('staff.hostel_approval', status='approved') }}'">
+                Approved
+            </button>
+            <button class="tab-btn {{ 'active' if status == 'rejected' else '' }}"
+                onclick="window.location.href='{{ url_for('staff.hostel_approval', status='rejected') }}'">
+                Rejected
+            </button>
+        </div>
+
+        <!-- Hostel Passes Table -->
+        <div style="overflow-x: auto;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Pass ID</th>
+                        <th>Student ID</th>
+                        <th>Out Date/Time</th>
+                        <th>In Date/Time</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if passes %}
+                    {% for pass in passes %}
+                    <tr>
+                        <td>{{ pass.pass_id }}</td>
+                        <td>{{ pass.student_id }}</td>
+                        <td>
+                            <div>{{ pass.out_date }}</div>
+                            <small style="color: #6b7280;">{{ pass.out_time }}</small>
+                        </td>
+                        <td>
+                            <div>{{ pass.in_date }}</div>
+                            <small style="color: #6b7280;">{{ pass.in_time }}</small>
+                        </td>
+                        <td>{{ pass.reason }}</td>
+                        <td>
+                            <span
+                                class="badge badge-{{ 'success' if pass.status == 'approved' else 'danger' if pass.status == 'rejected' else 'warning' }}">
+                                {{ pass.status.upper() }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if pass.status == 'pending' %}
+                            <div style="display: flex; gap: 5px;">
+                                <button class="btn btn-success" style="padding: 5px 10px; font-size: 14px;"
+                                    onclick="approvePass('{{ pass.pass_id }}')">
+                                    ✓
+                                </button>
+                                <button class="btn btn-danger" style="padding: 5px 10px; font-size: 14px;"
+                                    onclick="rejectPass('{{ pass.pass_id }}')">
+                                    ✗
+                                </button>
+                            </div>
+                            {% else %}
+                            <span style="color: #6b7280; font-size: 14px;">
+                                {{ pass.approved_by if pass.approved_by else '-' }}
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: #6b7280; padding: 40px;">
+                            <p style="font-size: 18px; margin-bottom: 10px;">📋 No {{ status }} hostel passes</p>
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+</div>
+
+<style>
+    .tab-btn {
+        padding: 10px 20px;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        color: #6b7280;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+
+    .tab-btn.active {
+        color: #667eea;
+        border-bottom-color: #667eea;
+    }
+
+    .tab-btn:hover {
+        color: #667eea;
+    }
+</style>
+
+<script>
+    function approvePass(passId) {
+        if (confirm('Approve this hostel pass?')) {
+            fetch(`/staff/hostel-approve/${passId}`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Pass approved!');
+                        window.location.reload();
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                });
+        }
+    }
+
+    function rejectPass(passId) {
+        if (confirm('Reject this hostel pass?')) {
+            fetch(`/staff/hostel-reject/${passId}`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Pass rejected!');
+                        window.location.reload();
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                });
+        }
+    }
+</script>
+{% endblock %}
